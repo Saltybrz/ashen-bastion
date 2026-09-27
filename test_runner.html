@@ -1,0 +1,539 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="utf-8">
+    <title>RPG Hybrid Tests</title>
+</head>
+<body>
+    <div id="results">Running tests...</div>
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/BlacksmithManager.js"></script>
+    <script src="js/systems/AlchemyManager.js"></script>
+    <script src="js/systems/MarketManager.js"></script>
+    <script src="js/systems/BountyManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/IdleEngine.js"></script>
+    <script>
+        const output = [];
+        function log(msg) {
+            output.push(msg);
+            console.log(msg);
+        }
+
+        let passed = 0, total = 0;
+        function assert(cond, msg) {
+            total++;
+            if (!cond) {
+                log('FAIL: ' + msg);
+                throw new Error('FAIL: ' + msg);
+            }
+            log('PASS: ' + msg);
+            passed++;
+        }
+
+        try {
+            // 1. Progression
+            const prog = new PlayerProgression({ baseXP: 100, exponent: 1.6 });
+            assert(prog.getXPRequiredForLevel(1) === 100, 'Lvl 1 XP is 100');
+            assert(prog.getXPRequiredForLevel(2) === Math.floor(100 * Math.pow(2, 1.6)), 'Lvl 2 XP formula check');
+            
+            prog.addActiveXP(105);
+            assert(prog.level === 2, 'Lvl 2 reached via active XP');
+            assert(prog.skillPoints === 2, '2 skill points at lvl 2');
+            assert(prog.activeXP === 105, 'Active XP tracked');
+
+            prog.addPassiveXP(600);
+            assert(prog.passiveXP === 600, 'Passive XP tracked');
+            assert(prog.level >= 3, 'Level >= 3 via passive XP');
+
+            // 2. Skill Trees
+            const classes = ['barbarian', 'paladin', 'mage', 'necromancer'];
+            classes.forEach(c => {
+                const tree = SkillTree.createForClass(c);
+                assert(tree.nodes.length === 4, c + ' has 4 tiers');
+                assert(tree.getSkillByTier(1).unlocked === true, c + ' T1 starts unlocked');
+                assert(tree.getSkillByTier(2).requiredLevel === 5, c + ' T2 req lvl 5');
+                assert(tree.getSkillByTier(3).requiredLevel === 10, c + ' T3 req lvl 10');
+                assert(tree.getSkillByTier(4).requiredLevel === 20, c + ' T4 req lvl 20');
+                assert(tree.getSkillByTier(3).modifiers.length >= 2, c + ' T3 has >= 2 modifiers');
+            });
+
+            // 3. SkillTreeManager & Respec
+            const state = new StateManager();
+            state.initNewGame('barbarian');
+            const mgr = new SkillTreeManager(state);
+            assert(mgr.validatePrereqs('barb_leap_slam').valid === false, 'T2 locked at level 1');
+
+            state.character.level = 15;
+            state.character.progression.level = 15;
+            state.character.progression.skillPoints = 14;
+
+            assert(mgr.spendPoint('barb_leap_slam').success === true, 'T2 unlocked at lvl 15');
+            assert(mgr.spendPoint('barb_whirlwind').success === true, 'T3 unlocked at lvl 15');
+            assert(mgr.toggleModifier('barb_whirlwind', 'mod_wind_slashes').success === true, 'Toggled mutation to wind slashes');
+
+            state.resources.gold = 300;
+            state.resources.ore = 200;
+            const respecRes = mgr.respec();
+            assert(respecRes.success === true, 'Respec successful');
+            assert(state.character.skillTree.getSkillByTier(2).unlocked === false, 'T2 relocked after respec');
+
+            // 4. CombatController
+            const combat = new CombatController(state);
+            assert(combat.currentState === PlayerCombatState.IDLE, 'Combat state IDLE');
+            combat.update(0.1, { moving: true });
+            assert(combat.currentState === PlayerCombatState.WALKING, 'Combat state WALKING');
+
+            const testResult = combat.testCombatDamage();
+            assert(testResult.calculation.damage > 0, 'Damage calculation > 0');
+            assert(testResult.enemyStateAfterHit.hitFlash === true, 'Hit flash triggered');
+            assert(testResult.enemyStateAfterHit.vx > 0, 'Knockback vector applied');
+            assert(testResult.floatingText !== undefined, 'Floating text generated');
+
+            // 5. Difficulty System & Multipliers
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.NORMAL].enemyHpMult === 1.0, 'Normal enemy HP mult is 1.0');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.NORMAL].deathLootLoss === 0.25, 'Normal death loot loss is 25%');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.NIGHTMARE].enemyHpMult === 1.45, 'Nightmare enemy HP mult is 1.45 (+45%)');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.NIGHTMARE].enemyDmgMult === 1.35, 'Nightmare enemy Dmg mult is 1.35 (+35%)');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.NIGHTMARE].deathLootLoss === 0.60, 'Nightmare death loot loss is 60%');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.TORMENT].enemyHpMult === 2.10, 'Torment enemy HP mult is 2.10 (+110%)');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.TORMENT].enemyDmgMult === 1.80, 'Torment enemy Dmg mult is 1.80 (+80%)');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.TORMENT].deathLootLoss === 1.00, 'Torment death loot loss is 100%');
+            assert(DIFFICULTY_DEFINITIONS[DifficultyType.TORMENT].breaksKeyOnDeath === true, 'Torment breaks key on death');
+
+            state.initNewGame('paladin', DifficultyType.TORMENT);
+            assert(state.difficulty === DifficultyType.TORMENT, 'State difficulty is Torment');
+            assert(state.difficultyConfig.enemyHpMult === 2.10, 'difficultyConfig getter resolves correctly');
+
+            // 6. Class Definitions & Canonical Glyphs
+            assert(CLASS_DEFINITIONS.barbarian.icon === 'ᛏ', 'Barbarian glyph is Tiwaz (ᛏ)');
+            assert(CLASS_DEFINITIONS.barbarian.epithet === 'O Quebrador de Hordas', 'Barbarian epithet matches');
+            assert(CLASS_DEFINITIONS.paladin.icon === 'ᛉ', 'Paladin glyph is Algiz (ᛉ)');
+            assert(CLASS_DEFINITIONS.paladin.epithet === 'O Guardião do Crepúsculo', 'Paladin epithet matches');
+            assert(CLASS_DEFINITIONS.mage.icon === 'ᛋ', 'Mage glyph is Sowilo (ᛋ)');
+            assert(CLASS_DEFINITIONS.mage.epithet === 'O Tecelão do Éter', 'Mage epithet matches');
+            assert(CLASS_DEFINITIONS.necromancer.icon === 'ᛡ', 'Necromancer glyph is Gar (ᛡ)');
+            assert(CLASS_DEFINITIONS.necromancer.epithet === 'O Senhor das Carcaças', 'Necromancer epithet matches');
+
+            // 7. Save Overwrite and Clear (New save key 'in_search_of_hope_save')
+            state.save();
+            assert(state.hasSave() === true, 'Save exists in localStorage');
+            assert(localStorage.getItem('in_search_of_hope_save') !== null, 'Saved under in_search_of_hope_save');
+            state.clearSave();
+            assert(state.hasSave() === false, 'Save cleared successfully');
+
+            // 8. Death Penalty in DungeonEngine
+            const tormentState = new StateManager();
+            tormentState.initNewGame(ClassType.PALADIN, DifficultyType.TORMENT);
+            const tormentDungeon = new DungeonEngine(tormentState);
+            tormentState.inDungeon = true;
+            tormentDungeon.running = true;
+            tormentState.resources.gold = 500;
+            tormentDungeon.runLoot = { gold: 100, items: [] };
+            tormentState.dungeonKeys = 3;
+            tormentDungeon.exit('death');
+            assert(tormentDungeon.running === false, 'Dungeon halted on death');
+            assert(tormentState.resources.gold === 400, 'Lost 100% of run gold in Torment (500 - 100 = 400)');
+            assert(tormentState.dungeonKeys === 2, 'Key broken on death in Torment');
+
+            const normalState = new StateManager();
+            normalState.initNewGame(ClassType.BARBARIAN, DifficultyType.NORMAL);
+            const normalDungeon = new DungeonEngine(normalState);
+            normalState.inDungeon = true;
+            normalDungeon.running = true;
+            normalState.resources.gold = 500;
+            normalDungeon.runLoot = { gold: 200, items: [] };
+            normalDungeon.exit('death');
+            assert(normalState.resources.gold === 450, 'Lost only 25% of run gold in Normal (500 - 50 = 450)');
+
+            // ═══════════════════════════════════════════
+            // 9. Save Migration (Legacy 'tlb_save' -> 'in_search_of_hope_save')
+            // ═══════════════════════════════════════════
+            localStorage.removeItem('in_search_of_hope_save');
+            localStorage.removeItem('tlb_save');
+            const legacyStateData = {
+                difficulty: 'veteran',
+                resources: { gold: 777, wood: 100, ore: 50 },
+                dungeonKeys: 5,
+            };
+            localStorage.setItem('tlb_save', JSON.stringify(legacyStateData));
+            const migrationState = new StateManager();
+            assert(migrationState.hasSave() === true, 'Migration detects legacy save');
+            const loaded = migrationState.load();
+            assert(loaded === true, 'Loaded legacy save without error');
+            assert(migrationState.resources.gold === 777, 'Legacy resources preserved');
+            assert(localStorage.getItem('in_search_of_hope_save') !== null, 'Legacy data migrated to new key');
+            migrationState.clearSave();
+
+            // ═══════════════════════════════════════════
+            // 10. BlacksmithManager (A Bigorna Ancestral)
+            // ═══════════════════════════════════════════
+            const forgeState = new StateManager();
+            forgeState.initNewGame('barbarian');
+            const blacksmith = new BlacksmithManager(forgeState);
+
+            const sword = new Item({
+                name: 'Espada de Ferro Negro',
+                type: ItemType.WEAPON,
+                rarity: Rarity.COMMON,
+                baseDamage: 20,
+            });
+            assert(sword.upgradeLevel === 0, 'Item starts at +0');
+            assert(sword.effectiveDamage === 20, 'Effective damage at +0 is base damage');
+            assert(sword.displayName === 'Espada de Ferro Negro', 'Display name at +0 has no suffix');
+
+            forgeState.character.equipment.weapon = sword;
+            forgeState.resources[ResourceType.ORE] = 500;
+            forgeState.resources[ResourceType.GOLD] = 500;
+
+            // +1 to +3 upgrades have 100% success rate
+            const up1 = blacksmith.upgradeItem(sword.id);
+            assert(up1.success === true && up1.upgraded === true, '+1 upgrade succeeded');
+            assert(sword.upgradeLevel === 1, 'Item level is now +1');
+            assert(sword.effectiveDamage === 22, '+1 gives +10% base damage (20 -> 22)');
+            assert(sword.displayName === 'Espada de Ferro Negro +1', 'Display name now includes +1');
+
+            // Upgrade to +2 and +3
+            blacksmith.upgradeItem(sword.id);
+            blacksmith.upgradeItem(sword.id);
+            assert(sword.upgradeLevel === 3, 'Item reached +3 with 100% chance');
+            assert(sword.effectiveDamage === 26, '+3 gives +30% base damage (20 -> 26)');
+
+            // Test non-destructive failure (mock Math.random = 0.99 for +4 where chance is 85%)
+            const originalRandom = Math.random;
+            Math.random = () => 0.99; // Force failure
+            const oreBefore = forgeState.resources[ResourceType.ORE];
+            const up4Fail = blacksmith.upgradeItem(sword.id);
+            assert(up4Fail.success === true && up4Fail.upgraded === false, 'Upgrade failed safely');
+            assert(sword.upgradeLevel === 3, 'Item level preserved at +3 (never destroyed)');
+            assert(forgeState.resources[ResourceType.ORE] < oreBefore, 'Resources consumed on failure');
+            Math.random = originalRandom; // Restore random
+
+            // Scrap Salvage
+            const trashCommon = new Item({ name: 'Adaga Velha', rarity: Rarity.COMMON, type: ItemType.WEAPON });
+            const trashMagic = new Item({ name: 'Elmo Enfeitiçado', rarity: Rarity.MAGIC, type: ItemType.HELMET });
+            const trashRare = new Item({ name: 'Armadura Real', rarity: Rarity.RARE, type: ItemType.ARMOR });
+            
+            forgeState.character.inventory = [trashCommon, trashMagic, trashRare];
+            const commRet = blacksmith.calculateSalvageReturns(trashCommon);
+            assert(commRet[ResourceType.WOOD] > 0 || commRet[ResourceType.ORE] > 0, 'Common returns wood/ore');
+            const magRet = blacksmith.calculateSalvageReturns(trashMagic);
+            assert(magRet[ResourceType.GOLD] > 0 && magRet[ResourceType.ESSENCE] > 0, 'Magic returns gold and essence');
+            const rareRet = blacksmith.calculateSalvageReturns(trashRare);
+            assert(rareRet[ResourceType.ASHES] > 0, 'Rare returns sacred ashes');
+
+            // Bulk salvage Common & Magic
+            const bulkRes = blacksmith.salvageCommonAndMagic();
+            assert(bulkRes.success === true && bulkRes.count === 2, 'Bulk salvage dismantled 2 items');
+            assert(forgeState.character.inventory[0] === null, 'First item removed');
+            assert(forgeState.character.inventory[1] === null, 'Second item removed');
+            assert(forgeState.character.inventory[2] !== null, 'Rare item kept safe');
+
+            // ═══════════════════════════════════════════
+            // 11. AlchemyManager (O Caldeirão Alquímico)
+            // ═══════════════════════════════════════════
+            const alchState = new StateManager();
+            alchState.initNewGame('barbarian');
+            const alchemy = new AlchemyManager(alchState);
+
+            alchState.resources[ResourceType.WOOD] = 100;
+            alchState.resources[ResourceType.ORE] = 100;
+            alchState.resources[ResourceType.GOLD] = 300;
+            alchState.resources[ResourceType.ESSENCE] = 10;
+            alchState.resources[ResourceType.ASHES] = 10;
+
+            const brew1 = alchemy.craftPotion('flint_extract', 2);
+            assert(brew1.success === true, 'Crafted 2 Flint Extract');
+            assert(alchState.potions['flint_extract'] === 2, 'Inventory has 2 Flint Extract');
+
+            const brew2 = alchemy.craftPotion('black_iron_oil', 1);
+            assert(brew2.success === true, 'Crafted 1 Black Iron Oil');
+
+            // Belt Assignment
+            alchemy.assignBeltSlot(0, 'flint_extract');
+            alchemy.assignBeltSlot(1, 'black_iron_oil');
+            assert(alchState.potionBelt[0] === 'flint_extract', 'Slot 1 bound to flint_extract');
+            assert(alchState.potionBelt[1] === 'black_iron_oil', 'Slot 2 bound to black_iron_oil');
+
+            // Potion Consumption via Belt
+            const baseAttackSpeed = alchState.character.attackSpeed;
+            const useRes = alchemy.useBeltSlot(0);
+            assert(useRes.success === true, 'Used potion from belt slot 0');
+            assert(alchState.potions['flint_extract'] === 1, 'Flint Extract count reduced to 1');
+            assert(alchState.activeBuffs['flint_extract'] !== undefined, 'Buff active in state');
+            assert(alchState.character.attackSpeed > baseAttackSpeed, '+15% Attack speed buff applied to character');
+
+            // Decay buff
+            alchemy.update(95); // Flint extract lasts 90s
+            assert(alchState.activeBuffs['flint_extract'] === undefined, 'Buff expired after duration');
+            assert(alchState.character.attackSpeed === baseAttackSpeed, 'Attack speed returned to base');
+
+            // Class resource potion
+            alchState.character.resource = 10;
+            alchemy.craftPotion('unstable_ether_flask', 1);
+            alchemy.usePotion('unstable_ether_flask');
+            assert(alchState.character.resource > 10, 'Unstable Ether Flask restored class resource');
+
+            // ═══════════════════════════════════════════
+            // 12. MarketManager (A Feira das Cinzas)
+            // ═══════════════════════════════════════════
+            const marketState = new StateManager();
+            marketState.initNewGame('barbarian');
+            const market = new MarketManager(marketState);
+
+            marketState.resources[ResourceType.WOOD] = 30;
+            marketState.resources[ResourceType.ORE] = 20;
+            marketState.resources[ResourceType.GOLD] = 500;
+
+            // Barter 3 wood -> 1 ore
+            const barterRes = market.barter('wood_to_ore', 2); // 6 wood -> 2 ore
+            assert(barterRes.success === true, 'Bartered wood to ore');
+            assert(marketState.resources[ResourceType.WOOD] === 24, '30 - 6 = 24 wood');
+            assert(marketState.resources[ResourceType.ORE] === 22, '20 + 2 = 22 ore');
+
+            // Buy Rift Key
+            assert(marketState.dungeonKeys === 0, 'Starts with 0 keys');
+            market.buyRiftKey(2);
+            assert(marketState.dungeonKeys === 2, 'Purchased 2 rift keys');
+            assert(marketState.resources[ResourceType.GOLD] === 500 - 300, 'Gold deducted for keys');
+
+            // Buy Limited Reagents
+            const buyEss = market.buyReagent('essence', 2);
+            assert(buyEss.success === true, 'Bought 2 arcane essence');
+            assert(marketState.marketStock['essence'] === 3, 'Remaining stock is 3');
+
+            // Restock
+            market.restock(50);
+            assert(marketState.marketStock['essence'] === 5, 'Stock fully restored');
+
+            // ═══════════════════════════════════════════
+            // 13. BountyManager (O Quadro de Editais)
+            // ═══════════════════════════════════════════
+            const bountyState = new StateManager();
+            bountyState.initNewGame('barbarian');
+            const bounties = new BountyManager(bountyState);
+
+            assert(bountyState.bounties.length === 3, '3 simultaneous bounty slots');
+            assert(bountyState.bounties[0].title !== undefined, 'Slot 0 initialized with bounty');
+            assert(bountyState.bounties[1].title !== undefined, 'Slot 1 initialized with bounty');
+            assert(bountyState.bounties[2].title !== undefined, 'Slot 2 initialized with bounty');
+
+            // Force a predictable Hunt bounty in slot 0 for test
+            bountyState.bounties[0] = {
+                id: 'test_hunt_0',
+                slotIndex: 0,
+                type: 'hunt',
+                title: 'Caçada de Teste',
+                targetType: 'any_enemy',
+                targetCount: 2,
+                currentCount: 0,
+                completed: false,
+                claimed: false,
+                reward: { xp: 200, gold: 100, keys: 1 },
+                cooldownRemaining: 0,
+            };
+
+            // Progress via enemy kill event
+            bountyState.emit('dungeon:enemy_killed', { isElite: false, isBoss: false });
+            assert(bountyState.bounties[0].currentCount === 1, 'Hunt bounty progressed to 1');
+            assert(bountyState.bounties[0].completed === false, 'Not yet completed');
+
+            bountyState.emit('dungeon:enemy_killed', { isElite: false, isBoss: false });
+            assert(bountyState.bounties[0].currentCount === 2, 'Hunt bounty reached target 2');
+            assert(bountyState.bounties[0].completed === true, 'Hunt bounty marked completed');
+
+            // Claim reward
+            const goldBeforeClaim = bountyState.resources[ResourceType.GOLD];
+            const keysBeforeClaim = bountyState.dungeonKeys;
+            const claimRes = bounties.claimBounty(0);
+            assert(claimRes.success === true, 'Claimed bounty successfully');
+            assert(bountyState.resources[ResourceType.GOLD] === goldBeforeClaim + 100, 'Gold reward delivered');
+            assert(bountyState.dungeonKeys === keysBeforeClaim + 1, 'Key reward delivered');
+            assert(bountyState.bounties[0].claimed === true, 'Bounty marked claimed');
+            assert(bountyState.bounties[0].cooldownRemaining > 0, 'Auto-refresh cooldown started');
+
+            // Fast refresh slot using 20 gold
+            bountyState.resources[ResourceType.GOLD] = 100;
+            const fastRes = bounties.fastRefreshSlot(0);
+            assert(fastRes.success === true, 'Fast refreshed claimed slot');
+            assert(bountyState.bounties[0].claimed === false, 'New active bounty in slot 0');
+
+            // Reroll slot using 25 gold
+            const oldId = bountyState.bounties[1].id;
+            bounties.rerollBounty(1);
+            assert(bountyState.bounties[1].id !== oldId, 'Bounty rerolled with new contract');
+
+            // ═══════════════════════════════════════════
+            // 14. GatheringNode & IdleEngine (Zero Worker Halt vs Auto Gather)
+            // ═══════════════════════════════════════════
+            const idleState = new StateManager();
+            idleState.initNewGame('barbarian');
+            const idleEngine = new IdleEngine(idleState);
+            const woodNode = idleState.nodes.find(n => n.id === 'wood_grove');
+            assert(woodNode !== undefined, 'Wood Grove node exists');
+            assert(woodNode.workers === 0, 'Node workers initially 0');
+
+            // Start manual gathering
+            woodNode.startGather();
+            assert(woodNode.isGathering === true, 'Manual gather started');
+            assert(woodNode.gatherProgress === 0, 'Progress starts at 0%');
+
+            // Advance halfway (Barbarian has +25% gathering speed passive, so 0.5 * 1.25 = 0.625)
+            idleEngine._tickNodes(woodNode.baseTime * 0.5);
+            assert(woodNode.isGathering === true, 'Node is gathering');
+            assert(woodNode.gatherProgress >= 0.55 && woodNode.gatherProgress <= 0.70, 'Progress advanced with Barbarian speed passive (~62.5%)');
+
+            // Finish gathering to 100%
+            const initialWood = idleState.resources[ResourceType.WOOD];
+            idleEngine._tickNodes(woodNode.baseTime);
+            assert(idleState.resources[ResourceType.WOOD] > initialWood, 'Delivered resources on 100%');
+            assert(woodNode.isGathering === false, 'Halted immediately when workers === 0');
+            assert(woodNode.gatherProgress === 0, 'Progress reset to 0%');
+            assert(woodNode.gatherElapsed === 0, 'Elapsed reset to 0');
+
+            // Verify subsequent ticks DO NOT start gathering automatically
+            idleEngine._tickNodes(2.0);
+            assert(woodNode.isGathering === false, 'Remains halted without auto-restart');
+            assert(woodNode.gatherProgress === 0, 'Progress stays at 0%');
+
+            // With workers > 0, auto-gather loop MUST run
+            idleState.workers['lumberjack'] = 1;
+            woodNode.startGather();
+            idleEngine._tickNodes(woodNode.baseTime * 1.1);
+            assert(woodNode.workers > 0, 'Workers count synced');
+            assert(woodNode.isGathering === true, 'Auto-restarted gathering because workers > 0');
+
+            // ═══════════════════════════════════════════
+            // 15. 2D Dungeon Map Coordinates & In-Canvas Survival HUD
+            // ═══════════════════════════════════════════
+            const mapState = new StateManager();
+            mapState.initNewGame('paladin');
+            const dungeon = new DungeonEngine(mapState);
+            assert(dungeon.roomW === 2752, 'Dungeon map width is 2752');
+            assert(dungeon.roomH === 1536, 'Dungeon map height is 1536');
+
+            // South Entrance spawn
+            assert(dungeon.player.x === 1376, 'Hero spawned at X=1376 (South Entrance)');
+            assert(dungeon.player.y === 1420, 'Hero spawned at Y=1420 (South Entrance)');
+
+            // Generate floor entities
+            dungeon._generateFloor();
+
+            // North Circular Arena Boss
+            assert(dungeon.boss !== null, 'Boss spawned');
+            assert(dungeon.boss.x === 1376, 'Boss located at X=1376 (North Chamber)');
+            assert(dungeon.boss.y === 220, 'Boss located at Y=220 (North Chamber)');
+
+            // Chests and side enemies
+            assert(dungeon.chests.length >= 4, 'At least 4 relic chests placed in dungeon');
+            assert(dungeon.enemies.length >= 8, 'Enemies scattered through dungeon corridor and rooms');
+
+            // Damage feedback: crimson vignette & screen shake
+            assert(dungeon.damageVignetteTimer === 0, 'Damage vignette starts at 0');
+            assert(dungeon.screenShakeTimer === 0, 'Screen shake starts at 0');
+            const hpBeforeHit = dungeon.player.hp;
+            dungeon._damagePlayer(25);
+            assert(dungeon.player.hp < hpBeforeHit, 'Player took damage after armor mitigation');
+            assert(dungeon.damageVignetteTimer === 0.15, '150ms crimson damage vignette triggered');
+            assert(dungeon.screenShakeTimer > 0, 'Screen shake timer triggered');
+            assert(dungeon.screenShakeIntensity > 0, 'Screen shake intensity applied');
+
+            // ═══════════════════════════════════════════
+            // 16. Attribute Points vs Glyph Points Separation & AttributeManager
+            // ═══════════════════════════════════════════
+            const attrState = new StateManager();
+            attrState.initNewGame('barbarian');
+            const attrChar = attrState.character;
+            const attrMgr = new AttributeManager(attrState);
+
+            assert(attrChar.level === 1, 'Hero starts at level 1');
+            assert(attrChar.attributePoints === 0, 'Starts with 0 attribute points');
+            assert(attrChar.skillPoints === 1, 'Starts with 1 glyph point (skill point)');
+            assert(attrMgr.spendPoint('strength').success === false, 'Cannot spend attribute points when 0 available');
+
+            // Level up character to level 2 (+3 attribute points, +1 skill point)
+            attrChar.addXP(attrChar.progression.xpToNextLevel, 'active');
+            assert(attrChar.level === 2, 'Reached level 2');
+            assert(attrChar.attributePoints === 3, 'Gained +3 attribute points at level 2');
+            assert(attrChar.skillPoints === 2, 'Gained +1 glyph point (skill points = 2) at level 2');
+
+            // Baseline stats before spending
+            const baseDmg = attrChar.stats.damage;
+            const baseCritDmg = attrChar.stats.critDamage;
+            const baseAtkSpd = attrChar.stats.attackSpeed;
+            const baseCritChance = attrChar.stats.critChance;
+            const baseMaxHp = attrChar.stats.maxHp;
+            const baseArmor = attrChar.stats.armor;
+
+            // 1. Spend 1 point in Força: +2 Dano Físico e +0.5% Dano Crítico
+            const resStr = attrMgr.spendPoint('strength');
+            assert(resStr.success === true, 'Spent 1 point in Força');
+            assert(attrChar.allocatedStats.strength === 1, 'Allocated Força is 1');
+            assert(attrChar.stats.damage === baseDmg + 2, 'Força granted +2 Physical Damage');
+            assert(Math.abs(attrChar.stats.critDamage - (baseCritDmg + 0.5)) < 0.0001, 'Força granted +0.5% Crit Damage');
+            assert(attrChar.attributePoints === 2, '2 attribute points remain');
+
+            // 2. Spend 1 point in Destreza: +0.5% Velocidade de Ataque e +0.3% Chance Crítica
+            const resDex = attrMgr.spendPoint('dexterity');
+            assert(resDex.success === true, 'Spent 1 point in Destreza');
+            assert(attrChar.allocatedStats.dexterity === 1, 'Allocated Destreza is 1');
+            assert(Math.abs(attrChar.stats.attackSpeed - (baseAtkSpd + 0.005)) < 0.0001, 'Destreza granted +0.5% Attack Speed');
+            assert(Math.abs(attrChar.stats.critChance - (baseCritChance + 0.3)) < 0.0001, 'Destreza granted +0.3% Crit Chance');
+            assert(attrChar.attributePoints === 1, '1 attribute point remains');
+
+            // 3. Spend 1 point in Vitalidade: +15 de Vida Máxima e +1 de Armadura
+            const resVit = attrMgr.spendPoint('vitality');
+            assert(resVit.success === true, 'Spent 1 point in Vitalidade');
+            assert(attrChar.allocatedStats.vitality === 1, 'Allocated Vitalidade is 1');
+            assert(attrChar.stats.maxHp === baseMaxHp + 15, 'Vitalidade granted +15 Max HP');
+            assert(attrChar.stats.armor === baseArmor + 1, 'Vitalidade granted +1 Armor');
+            assert(attrChar.attributePoints === 0, '0 attribute points remain');
+
+            // Level up again (+3 attribute points) and test Fé/Éter
+            attrChar.addXP(attrChar.progression.xpToNextLevel, 'active');
+            assert(attrChar.level === 3, 'Reached level 3');
+            assert(attrChar.attributePoints === 3, 'Gained +3 attribute points at level 3');
+            const baseMana = attrChar.stats.maxResource;
+            const baseArcane = attrChar.stats.arcaneDamage;
+
+            // 4. Spend 1 point in Fé: +10 de Mana Máxima e +1.5 de Dano Arcano
+            const resFaith = attrMgr.spendPoint('faith');
+            assert(resFaith.success === true, 'Spent 1 point in Fé/Éter');
+            assert(attrChar.allocatedStats.faith === 1, 'Allocated Fé is 1');
+            assert(attrChar.stats.maxResource === baseMana + 10, 'Fé granted +10 Max Mana/Resource');
+            assert(Math.abs(attrChar.stats.arcaneDamage - (baseArcane + 1.5)) < 0.0001, 'Fé granted +1.5 Arcane Damage');
+            assert(attrChar.attributePoints === 2, '2 attribute points remain');
+
+            // Test Character JSON Serialization with Allocated Stats & Attribute Points
+            const serialized = attrChar.toJSON();
+            assert(serialized.attributePoints === 2, 'attributePoints serialized');
+            assert(serialized.allocatedStats.strength === 1, 'allocatedStats.strength serialized');
+            assert(serialized.allocatedStats.dexterity === 1, 'allocatedStats.dexterity serialized');
+            assert(serialized.allocatedStats.vitality === 1, 'allocatedStats.vitality serialized');
+            assert(serialized.allocatedStats.faith === 1, 'allocatedStats.faith serialized');
+
+            const loadedChar = Character.fromJSON(serialized);
+            assert(loadedChar.attributePoints === 2, 'attributePoints deserialized');
+            assert(loadedChar.allocatedStats.strength === 1, 'allocatedStats.strength deserialized');
+            assert(loadedChar.stats.damage === attrChar.stats.damage, 'Recalculated stats match after deserialization');
+
+            log(`\nSUMMARY: ${passed}/${total} TESTS PASSED!`);
+            document.getElementById('results').innerText = output.join('\n');
+        } catch (e) {
+            log('ERROR: ' + e.message);
+            document.getElementById('results').innerText = output.join('\n') + '\n' + e.stack;
+        }
+    </script>
+</body>
+</html>

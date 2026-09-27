@@ -1,0 +1,119 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Showcase - Oráculo das Cinzas</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/ai-dialogue.css">
+    <style>
+        body {
+            margin: 0;
+            padding: 0;
+            background: #080708 radial-gradient(circle at center, #1b1622 0%, #080708 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            min-height: 100vh;
+            overflow: hidden;
+            font-family: 'Crimson Pro', serif;
+        }
+        .oracle-modal-overlay {
+            opacity: 1 !important;
+            pointer-events: auto !important;
+            position: relative !important;
+            background: transparent !important;
+        }
+    </style>
+</head>
+<body>
+    <div id="oracle-modal-overlay" class="oracle-modal-overlay active">
+        <div class="oracle-dialogue-window" id="oracle-dialogue-window">
+            <!-- Cabeçalho -->
+            <div class="oracle-header">
+                <div class="oracle-header-title-box">
+                    <span class="oracle-sigil" id="oracle-sigil">ᛟ</span>
+                    <div>
+                        <h3 class="oracle-title" id="oracle-title">Oráculo das Cinzas</h3>
+                        <p class="oracle-subtitle" id="oracle-subtitle">Comunhão com o Mestre das Cinzas</p>
+                    </div>
+                </div>
+                <button class="oracle-close-btn" id="oracle-close-btn" title="Fechar (ESC)">✕</button>
+            </div>
+
+            <!-- Seletor de Personas -->
+            <div class="oracle-personas-bar" id="oracle-personas-bar">
+                <button class="persona-tab active" data-persona="loremaster">
+                    <span class="rune-icon">ᛟ</span> Mestre das Cinzas
+                </button>
+                <button class="persona-tab" data-persona="blacksmith">
+                    <span class="rune-icon">🜛</span> Kaelen (Ferreiro)
+                </button>
+                <button class="persona-tab" data-persona="alchemist">
+                    <span class="rune-icon">🜂</span> Morvath (Alquimista)
+                </button>
+                <button class="persona-tab" data-persona="merchant">
+                    <span class="rune-icon">🜚</span> Vesper (Mercadora)
+                </button>
+            </div>
+
+            <!-- Mensagens -->
+            <div class="oracle-messages-area" id="oracle-messages-area">
+                <div class="chat-msg oracle">
+                    <div class="chat-avatar">ᛟ</div>
+                    <div class="chat-bubble">
+                        <span class="chat-sender-name">Mestre das Cinzas</span>
+                        <div class="chat-text">
+                            Aproxime-se das brasas, penitente. Diga-me, o que sua alma atormentada busca nas profundezas da Fenda Abissal?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-msg player">
+                    <div class="chat-avatar">⚔</div>
+                    <div class="chat-bubble">
+                        <span class="chat-sender-name">Campeão das Cinzas</span>
+                        <div class="chat-text">
+                            Como posso vencer o Carrasco Flutuante sem sucumbir à escuridão?
+                        </div>
+                    </div>
+                </div>
+
+                <div class="chat-msg oracle">
+                    <div class="chat-avatar">ᛟ</div>
+                    <div class="chat-bubble">
+                        <span class="chat-sender-name">Mestre das Cinzas</span>
+                        <div class="chat-text">
+                            O ferro forjado por homens mortais nada vale se seu espírito vacilar diante da lâmina do carrasco. Observe o ritmo de seus passos desajeitados mas impiedosos: quando a fumaça púrpura rodopiar ao redor de seu cutelo, esquive-se em direção às suas costas e golpeie o elo rompido de suas correntes. Não economize seus elixires sagrados, pois as cinzas não perdoam a hesitação.
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Sugestões Rápidas -->
+            <div class="oracle-quick-prompts" id="oracle-quick-prompts">
+                <button class="quick-prompt-btn">Quem é você e qual seu propósito?</button>
+                <button class="quick-prompt-btn">Como derroto os horrores da Fenda?</button>
+                <button class="quick-prompt-btn">Qual é a história do Último Bastião?</button>
+                <button class="quick-prompt-btn">O que é a Busca pela Esperança?</button>
+            </div>
+
+            <!-- Entrada de Texto -->
+            <div class="oracle-input-bar">
+                <input type="text" class="oracle-input" id="oracle-input" placeholder="Faça sua indagação ao oráculo..." value="Qual a fraqueza dos servos da Fenda?" />
+                <button class="oracle-send-btn" id="oracle-send-btn">
+                    <span class="rune-icon">ᛏ</span> Perguntar
+                </button>
+            </div>
+
+            <!-- Rodapé de Status -->
+            <div class="oracle-status-footer">
+                <span>Vínculo Arcano: <strong class="status-cloud">Gemini 2.5 Flash</strong></span>
+                <span>[Atalho: Tecla O]</span>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

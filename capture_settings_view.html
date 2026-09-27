@@ -1,0 +1,41 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Gothic Settings Modal Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/hub.css">
+    <link rel="stylesheet" href="css/character.css">
+    <link rel="stylesheet" href="css/inventory.css">
+    <link rel="stylesheet" href="css/dungeon.css">
+    <link rel="stylesheet" href="css/skills.css">
+    <link rel="stylesheet" href="css/settings.css">
+</head>
+<body style="margin: 0; padding: 0; width: 1376px; height: 768px; overflow: hidden; background: #0c0b0e;">
+    <div id="app" style="width: 1376px; height: 768px; position: relative;">
+        <!-- Background title screen artwork -->
+        <div class="ts-bg" style="opacity: 1; background-image: url('assets/maps/hub_courtyard.jpg'); background-size: cover; background-position: center;"></div>
+        <div class="ts-vignette" style="opacity: 0.85;"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/systems/SettingsManager.js"></script>
+    <script src="js/systems/AudioManager.js"></script>
+    <script src="js/ui/SettingsUI.js"></script>
+
+    <script>
+        window.addEventListener('DOMContentLoaded', () => {
+            SettingsManager.init();
+            SettingsUI.init();
+            // Open on Audio tab for showcase
+            SettingsUI.open('audio');
+        });
+    </script>
+</body>
+</html>

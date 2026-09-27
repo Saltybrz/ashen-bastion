@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Gothic Settings Modal Visual Showcase</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/hub.css">
+    <link rel="stylesheet" href="css/settings.css">
+</head>
+<body style="margin: 0; padding: 0; background: #0c0b0e;">
+    <canvas id="showcase-canvas" width="1376" height="768"></canvas>
+    <div id="base64" style="display:none;"></div>
+
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/systems/SettingsManager.js"></script>
+
+    <script>
+        function renderShowcase() {
+            const canvas = document.getElementById('showcase-canvas');
+            const ctx = canvas.getContext('2d');
+
+            // 1. Atmospheric Ashen Background
+            ctx.fillStyle = '#080709';
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const torch1 = ctx.createRadialGradient(250, 200, 20, 250, 200, 350);
+            torch1.addColorStop(0, 'rgba(217, 119, 6, 0.25)');
+            torch1.addColorStop(1, 'transparent');
+            ctx.fillStyle = torch1;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            const torch2 = ctx.createRadialGradient(1150, 500, 20, 1150, 500, 400);
+            torch2.addColorStop(0, 'rgba(180, 83, 9, 0.22)');
+            torch2.addColorStop(1, 'transparent');
+            ctx.fillStyle = torch2;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 2. Fullscreen Vignette & Dark Overlay (backdrop-filter feel)
+            const vig = ctx.createRadialGradient(
+                canvas.width / 2, canvas.height / 2, 200,
+                canvas.width / 2, canvas.height / 2, 700
+            );
+            vig.addColorStop(0, 'rgba(12, 11, 14, 0.82)');
+            vig.addColorStop(1, 'rgba(5, 4, 6, 0.95)');
+            ctx.fillStyle = vig;
+            ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+            // 3. Gothic Modal Window (Centered 760 x 580)
+            const mw = 760;
+            const mh = 580;
+            const mx = (canvas.width - mw) / 2;
+            const my = (canvas.height - mh) / 2;
+
+            // Deep Outer Shadow
+            ctx.save();
+            ctx.shadowColor = 'rgba(0, 0, 0, 0.95)';
+            ctx.shadowBlur = 45;
+            ctx.fillStyle = '#0c0b0e';
+            ctx.fillRect(mx, my, mw, mh);
+            ctx.restore();
+
+            // Beveled Dark Iron & Aged Brass Frame (border: 2px solid #5a4625; 0 0 1px 1px #8c6d3b)
+            ctx.strokeStyle = '#5a4625';
+            ctx.lineWidth = 3;
+            ctx.strokeRect(mx, my, mw, mh);
+
+            ctx.strokeStyle = '#8c6d3b';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(mx + 2, my + 2, mw - 4, mh - 4);
+
+            // Inner Warm Glow
+            const innerGlow = ctx.createRadialGradient(
+                mx + mw / 2, my + mh / 2, 100,
+                mx + mw / 2, my + mh / 2, mw / 2
+            );
+            innerGlow.addColorStop(0, 'rgba(90, 70, 37, 0.05)');
+            innerGlow.addColorStop(1, 'rgba(90, 70, 37, 0.22)');
+            ctx.fillStyle = innerGlow;
+            ctx.fillRect(mx + 3, my + 3, mw - 6, mh - 6);
+
+            // 4. Modal Header
+            const headH = 54;
+            const headGrad = ctx.createLinearGradient(mx, my, mx, my + headH);
+            headGrad.addColorStop(0, 'rgba(28, 24, 20, 0.95)');
+            headGrad.addColorStop(1, 'rgba(14, 12, 16, 0.95)');
+            ctx.fillStyle = headGrad;
+            ctx.fillRect(mx + 3, my + 3, mw - 6, headH);
+
+            ctx.strokeStyle = '#3e2f18';
+            ctx.lineWidth = 2;
+            ctx.beginPath();
+            ctx.moveTo(mx, my + headH);
+            ctx.lineTo(mx + mw, my + headH);
+            ctx.stroke();
+
+            // Gold divider accent line
+            const goldLine = ctx.createLinearGradient(mx + 40, 0, mx + mw - 40, 0);
+            goldLine.addColorStop(0, 'transparent');
+            goldLine.addColorStop(0.3, '#8c6d3b');
+            goldLine.addColorStop(0.5, '#d97706');
+            goldLine.addColorStop(0.7, '#8c6d3b');
+            goldLine.addColorStop(1, 'transparent');
+            ctx.strokeStyle = goldLine;
+            ctx.lineWidth = 1;
+            ctx.beginPath();
+            ctx.moveTo(mx + 40, my + headH);
+            ctx.lineTo(mx + mw - 40, my + headH);
+            ctx.stroke();
+
+            // Title & Icon
+            ctx.fillStyle = '#d97706';
+            ctx.font = '20px serif';
+            ctx.fillText('⚙', mx + 24, my + 35);
+
+            ctx.font = 'bold 16px "Cinzel", serif';
+            ctx.fillStyle = '#f3eedf';
+            ctx.fillText('CONFIGURAÇÕES DO BASTIÃO', mx + 54, my + 34);
+
+            // Close [X] Button
+            ctx.strokeStyle = '#4a381e';
+            ctx.strokeRect(mx + mw - 44, my + 14, 28, 28);
+            ctx.fillStyle = '#9c9285';
+            ctx.font = '16px sans-serif';
+            ctx.fillText('✕', mx + mw - 36, my + 33);
+
+            // 5. Four Heraldic Tabs
+            const tabH = 42;
+            const tabY = my + headH + 1;
+            ctx.fillStyle = '#09080b';
+            ctx.fillRect(mx + 3, tabY, mw - 6, tabH);
+
+            ctx.strokeStyle = '#2a2216';
+            ctx.beginPath();
+            ctx.moveTo(mx, tabY + tabH);
+            ctx.lineTo(mx + mw, tabY + tabH);
+            ctx.stroke();
+
+            const tabs = [
+                { name: 'ÁUDIO', icon: '🔊', active: true },
+                { name: 'VISUAL', icon: '👁', active: false },
+                { name: 'JOGABILIDADE', icon: '⚔', active: false },
+                { name: 'CONTROLES', icon: '🎮', active: false }
+            ];
+
+            const tabW = (mw - 6) / 4;
+            tabs.forEach((t, i) => {
+                const tx = mx + 3 + i * tabW;
+                if (t.active) {
+                    ctx.fillStyle = 'rgba(217, 119, 6, 0.12)';
+                    ctx.fillRect(tx, tabY, tabW, tabH);
+                    ctx.fillStyle = '#d97706';
+                    ctx.fillRect(tx, tabY + tabH - 3, tabW, 3);
+                    ctx.fillStyle = '#fbbf24';
+                } else {
+                    ctx.fillStyle = '#8c8273';
+                }
+                ctx.font = 'bold 12px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.fillText(`${t.icon}  ${t.name}`, tx + tabW / 2, tabY + 26);
+            });
+
+            // 6. Active Tab Content (Audio Settings with brass sliders & rune toggle)
+            ctx.textAlign = 'left';
+            const contentY = tabY + tabH + 20;
+
+            const rows = [
+                { label: 'Volume Mestre', desc: 'Controla a saída sonora geral de todo o jogo.', type: 'slider', val: '80%', pct: 0.8 },
+                { label: 'Música & Cânticos', desc: 'Volume das trilhas ancestrais do menu, vila e masmorra.', type: 'slider', val: '70%', pct: 0.7 },
+                { label: 'Efeitos Sonoros (SFX)', desc: 'Lâminas colidindo, passos na pedra e impactos cinzas.', type: 'slider', val: '90%', pct: 0.9 },
+                { label: 'Sons de Ambiência', desc: 'Crepitação de fogueiras, vento fúnebre e respiração do abismo.', type: 'slider', val: '80%', pct: 0.8 },
+                { label: 'Mutar em Segundo Plano', desc: 'Silencia o jogo ao trocar de aba no navegador.', type: 'toggle', active: true }
+            ];
+
+            rows.forEach((r, idx) => {
+                const ry = contentY + idx * 72;
+
+                // Row Box
+                ctx.fillStyle = 'rgba(18, 16, 21, 0.75)';
+                ctx.fillRect(mx + 24, ry, mw - 48, 60);
+                ctx.strokeStyle = '#2a2216';
+                ctx.lineWidth = 1;
+                ctx.strokeRect(mx + 24, ry, mw - 48, 60);
+
+                // Info text
+                ctx.fillStyle = '#e5e0d8';
+                ctx.font = 'bold 13px "Cinzel", serif';
+                ctx.fillText(r.label, mx + 40, ry + 26);
+
+                ctx.fillStyle = '#9c9285';
+                ctx.font = '12px "Crimson Pro", serif';
+                ctx.fillText(r.desc, mx + 40, ry + 46);
+
+                if (r.type === 'slider') {
+                    // Slider Track
+                    const sx = mx + mw - 250;
+                    const sy = ry + 27;
+                    ctx.fillStyle = '#1e1913';
+                    ctx.fillRect(sx, sy, 150, 6);
+                    ctx.strokeStyle = '#3e2f18';
+                    ctx.strokeRect(sx, sy, 150, 6);
+
+                    // Filled Track (amber)
+                    ctx.fillStyle = '#b45309';
+                    ctx.fillRect(sx, sy, 150 * r.pct, 6);
+
+                    // Brass Thumb
+                    const tx = sx + 150 * r.pct;
+                    ctx.beginPath();
+                    ctx.arc(tx, sy + 3, 8, 0, Math.PI * 2);
+                    ctx.fillStyle = '#f59e0b';
+                    ctx.fill();
+                    ctx.strokeStyle = '#fef3c7';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Value
+                    ctx.font = 'bold 13px "Cinzel", serif';
+                    ctx.fillStyle = '#fbbf24';
+                    ctx.textAlign = 'right';
+                    ctx.fillText(r.val, mx + mw - 44, ry + 34);
+                    ctx.textAlign = 'left';
+                } else if (r.type === 'toggle') {
+                    // Runic Toggle Button
+                    const bx = mx + mw - 140;
+                    const by = ry + 15;
+                    ctx.fillStyle = 'rgba(217, 119, 6, 0.18)';
+                    ctx.fillRect(bx, by, 96, 30);
+                    ctx.strokeStyle = '#d97706';
+                    ctx.strokeRect(bx, by, 96, 30);
+
+                    ctx.font = '14px serif';
+                    ctx.fillStyle = '#facc15';
+                    ctx.fillText('ᛏ', bx + 14, by + 21);
+
+                    ctx.font = 'bold 12px "Cinzel", serif';
+                    ctx.fillText('Ligado', bx + 36, by + 20);
+                }
+            });
+
+            // 7. Action Footer
+            const footH = 54;
+            const footY = my + mh - footH;
+            const footGrad = ctx.createLinearGradient(0, footY, 0, footY + footH);
+            footGrad.addColorStop(0, 'rgba(28, 24, 20, 0.98)');
+            footGrad.addColorStop(1, 'rgba(14, 12, 16, 0.98)');
+            ctx.fillStyle = footGrad;
+            ctx.fillRect(mx + 3, footY, mw - 6, footH - 3);
+
+            ctx.strokeStyle = '#3e2f18';
+            ctx.beginPath();
+            ctx.moveTo(mx, footY);
+            ctx.lineTo(mx + mw, footY);
+            ctx.stroke();
+
+            // Left: [ ᛏ Restaurar Padrões ]
+            ctx.strokeStyle = '#4a2828';
+            ctx.strokeRect(mx + 24, footY + 12, 160, 30);
+            ctx.fillStyle = '#c98282';
+            ctx.font = 'bold 11px "Cinzel", serif';
+            ctx.fillText('ᛏ  Restaurar Padrões', mx + 38, footY + 31);
+
+            // Right: [ Cancelar ]
+            ctx.strokeStyle = '#4a381e';
+            ctx.strokeRect(mx + mw - 264, footY + 12, 90, 30);
+            ctx.fillStyle = '#a89f91';
+            ctx.fillText('Cancelar', mx + mw - 246, footY + 31);
+
+            // Right: [ 🜚 Aplicar & Salvar ]
+            const btnGrad = ctx.createLinearGradient(0, footY + 12, 0, footY + 42);
+            btnGrad.addColorStop(0, '#b45309');
+            btnGrad.addColorStop(1, '#78350f');
+            ctx.fillStyle = btnGrad;
+            ctx.fillRect(mx + mw - 162, footY + 12, 138, 30);
+            ctx.strokeStyle = '#f59e0b';
+            ctx.strokeRect(mx + mw - 162, footY + 12, 138, 30);
+
+            ctx.fillStyle = '#fef3c7';
+            ctx.fillText('🜚 Aplicar & Salvar', mx + mw - 150, footY + 31);
+
+            // Export to Base64
+            document.getElementById('base64').textContent = canvas.toDataURL('image/png');
+        }
+        renderShowcase();
+        window.addEventListener('DOMContentLoaded', renderShowcase);
+    </script>
+</body>
+</html>

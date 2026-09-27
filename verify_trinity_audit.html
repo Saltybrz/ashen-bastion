@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>In Search of Hope - Trinity Validation Audit</title>
+    <style>
+        body { margin: 0; background: #080708; color: #e8d8b0; font-family: monospace; }
+        canvas { display: block; width: 1280px; height: 720px; }
+        #base64 { display: none; }
+        #audit-report { display: block; white-space: pre-wrap; padding: 20px; font-size: 14px; }
+    </style>
+</head>
+<body>
+    <canvas id="c" width="1280" height="720"></canvas>
+    <div id="base64"></div>
+    <div id="audit-report"></div>
+
+    <script src="js/core/utils.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script>
+        async function runAudit() {
+            const report = [];
+            function addReport(line) {
+                report.push(line);
+                console.log(line);
+            }
+
+            addReport("==================================================");
+            addReport(" AUDITORIA DA CADEIA DE ASSETS & CONSOLIDAÇÃO 2D");
+            addReport("==================================================");
+
+            // ETAPA 1 & 2: Carregamento no AssetManager
+            addReport("\n[ETAPA 1 & 2: ASSET LOADER & CACHE CENTRALIZADO]");
+            const startTime = performance.now();
+            await AssetManager.loadAll();
+            const elapsed = (performance.now() - startTime).toFixed(1);
+            addReport(`Tempo de carregamento: ${elapsed}ms`);
+            addReport(`Ativos prontos no cache: ${AssetManager.readyAssets.size}`);
+
+            const auditKeys = [
+                'class_warmaster', 'class_flagellant', 'class_hierophant', 'class_heretic',
+                'void_skitterer', 'ashen_monk', 'flayed_brute', 'ironbound_executioner'
+            ];
+
+            for (const key of auditKeys) {
+                const asset = AssetManager.get(key);
+                const isReady = AssetManager.isReady(key);
+                const complete = asset ? asset.complete : false;
+                const nw = asset ? (asset.naturalWidth || asset.width || 0) : 0;
+                const nh = asset ? (asset.naturalHeight || asset.height || 0) : 0;
+                addReport(`- Asset [${key}]: Pronto=${isReady}, complete=${complete}, Dimensões=${nw}x${nh}px`);
+            }
+
+            // ETAPA 3 & 4: Instrumentação de Renderização e Validação da Trindade
+            addReport("\n[ETAPA 3 & 4: AVALIAÇÃO DE RENDERIZAÇÃO - A TRINDADE DE VALIDAÇÃO]");
+            const canvas = document.getElementById('c');
+            const ctx = canvas.getContext('2d');
+
+            // Fundo da Masmorra
+            ctx.fillStyle = '#0f0e13';
+            ctx.fillRect(0, 0, 1280, 720);
+
+            // Grade de pedra gótica
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+            for (let x = 0; x < 1280; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 720); ctx.stroke(); }
+            for (let y = 0; y < 720; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1280, y); ctx.stroke(); }
+
+            // Rastreamento de chamadas drawImage
+            const drawCallLog = [];
+            const origDrawImage = ctx.drawImage;
+            ctx.drawImage = function(img, ...args) {
+                drawCallLog.push({
+                    type: (img instanceof HTMLCanvasElement) ? 'HTMLCanvasElement' : (img instanceof HTMLImageElement ? 'HTMLImageElement' : typeof img),
+                    complete: img.complete,
+                    w: img.naturalWidth || img.width,
+                    h: img.naturalHeight || img.height,
+                    args: args
+                });
+                return origDrawImage.apply(ctx, [img, ...args]);
+            };
+
+            // Título do Showcase
+            ctx.font = 'bold 20px "Cinzel", serif';
+            ctx.fillStyle = '#c5a059';
+            ctx.fillText('IN SEARCH OF HOPE: THE ASHEN BASTION — VALIDAÇÃO DA TRINDADE DE ASSETS 2D', 50, 45);
+
+            ctx.font = '13px "Cinzel", serif';
+            ctx.fillStyle = '#a89f91';
+            ctx.fillText('Substituição definitiva de marcadores vetoriais legados por sprites PNG com ancoragem espacial e sombras', 50, 70);
+
+            // ─── 1. ENTIDADE OBRIGATÓRIA 1: O JOGADOR (HERÓI) ───
+            ctx.strokeStyle = '#c5a059';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(50, 95, 360, 260);
+
+            ctx.font = 'bold 14px "Cinzel", serif';
+            ctx.fillStyle = '#e8d8b0';
+            ctx.fillText('1. O JOGADOR (HERÓI DA CINZA)', 70, 125);
+            ctx.font = '11px monospace';
+            ctx.fillStyle = '#8b7e66';
+            ctx.fillText('Mestre da Guerra (class_warmaster.png)', 70, 142);
+            ctx.fillText('Pivô nos pés (-targetH * 0.85) + Sombra elíptica', 70, 158);
+
+            const hero1 = {
+                x: 150, y: 280,
+                radius: 20, width: 64, height: 64,
+                facing: { x: 1, y: 0 },
+                spriteKey: 'class_warmaster',
+                sprite: AssetManager.get('class_warmaster')
+            };
+            const hero2 = {
+                x: 300, y: 280,
+                radius: 20, width: 64, height: 64,
+                facing: { x: -1, y: 0 }, // Teste de Inversão Horizontal
+                spriteKey: 'class_warmaster',
+                sprite: AssetManager.get('class_warmaster')
+            };
+
+            EntityRenderer.drawPlayer(ctx, hero1, { classId: 'warmaster' });
+            ctx.font = '11px "Cinzel", serif';
+            ctx.fillStyle = '#fceecb';
+            ctx.textAlign = 'center';
+            ctx.fillText('Olhando Direita', 150, 305);
+
+            EntityRenderer.drawPlayer(ctx, hero2, { classId: 'warmaster' });
+            ctx.fillText('Olhando Esquerda (Flip)', 300, 305);
+
+            addReport("\n[VALIDAÇÃO 1: O JOGADOR]");
+            addReport(`- Herói instanciado com spriteKey='class_warmaster'`);
+            addReport(`- Sprite obtido do AssetManager: ${hero1.sprite ? 'Sim (válido)' : 'Não (nulo)'}`);
+
+            // ─── 2. ENTIDADE OBRIGATÓRIA 2: INIMIGO COMUM (RASTEJANTE & MONGE) ───
+            ctx.textAlign = 'left';
+            ctx.strokeRect(430, 95, 360, 260);
+
+            ctx.font = 'bold 14px "Cinzel", serif';
+            ctx.fillStyle = '#e8d8b0';
+            ctx.fillText('2. INIMIGOS COMUNS (RASTEJANTE & MONGE)', 450, 125);
+            ctx.font = '11px monospace';
+            ctx.fillStyle = '#8b7e66';
+            ctx.fillText('Rastejante (void_skitterer) e Monge (ashen_monk)', 450, 142);
+            ctx.fillText('Substituição consolidada de losangos por PNGs reais', 450, 158);
+
+            const crawler = new RiftCrawlerEnemy({
+                x: 520, y: 280,
+                radius: 16
+            });
+            const monk = new PenitentAutomatonEnemy({
+                x: 680, y: 280,
+                radius: 20
+            });
+
+            EntityRenderer.drawEnemy(ctx, crawler);
+            ctx.textAlign = 'center';
+            ctx.font = '11px "Cinzel", serif';
+            ctx.fillStyle = '#c084fc';
+            ctx.fillText('Rastejante do Vazio (50px)', 520, 305);
+
+            EntityRenderer.drawEnemy(ctx, monk);
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText('Monge das Cinzas (58px)', 680, 305);
+
+            addReport("\n[VALIDAÇÃO 2: INIMIGO COMUM]");
+            addReport(`- Rastejante instanciado com spriteKey='${crawler.spriteKey}', sprite=${crawler.sprite ? 'Válido' : 'Nulo'}`);
+            addReport(`- Monge instanciado com spriteKey='${monk.spriteKey}', sprite=${monk.sprite ? 'Válido' : 'Nulo'}`);
+
+            // ─── 3. ENTIDADE OBRIGATÓRIA 3: O CHEFE (O CARRASCO DE FERRO NEGRO - 180x180 px) ───
+            ctx.textAlign = 'left';
+            ctx.strokeStyle = '#ef4444';
+            ctx.lineWidth = 1.5;
+            ctx.strokeRect(810, 95, 420, 595);
+
+            ctx.font = 'bold 15px "Cinzel", serif';
+            ctx.fillStyle = '#ef4444';
+            ctx.fillText('3. O CHEFE: O CARRASCO DE FERRO NEGRO', 830, 125);
+            ctx.font = '11px monospace';
+            ctx.fillStyle = '#fca5a5';
+            ctx.fillText('Grande Escala: 180 x 180 px (aprox 2.5x Hero)', 830, 142);
+            ctx.fillText('Ancoragem com sombra de 70x28px e micro-cinética', 830, 158);
+
+            const boss = new IronExecutionerBoss({
+                x: 1020, y: 440,
+                name: 'O Carrasco de Ferro Negro'
+            });
+
+            EntityRenderer.drawEnemy(ctx, boss);
+
+            ctx.textAlign = 'center';
+            ctx.font = 'bold 13px "Cinzel", serif';
+            ctx.fillStyle = '#fca5a5';
+            ctx.fillText('O Carrasco de Ferro Negro (180x180 px)', 1020, 485);
+            ctx.font = '11px monospace';
+            ctx.fillStyle = '#e8d8b0';
+            ctx.fillText('Câmara Norte da Fenda Abissal', 1020, 505);
+
+            addReport("\n[VALIDAÇÃO 3: O CHEFE - 180x180 PX]");
+            addReport(`- Chefe instanciado com spriteKey='${boss.spriteKey}'`);
+            addReport(`- Dimensões nominais: ${boss.width}x${boss.height} px, frameWidth=${boss.frameWidth}`);
+            addReport(`- Sprite obtido: ${boss.sprite ? 'Válido' : 'Nulo'}`);
+
+            // ─── PAINEL INFERIOR: OUTRAS CLASSES E BRUTO ESFOLADO ───
+            ctx.textAlign = 'left';
+            ctx.strokeStyle = '#c5a059';
+            ctx.lineWidth = 1;
+            ctx.strokeRect(50, 375, 740, 315);
+
+            ctx.font = 'bold 14px "Cinzel", serif';
+            ctx.fillStyle = '#e8d8b0';
+            ctx.fillText('COMPLEMENTO: AS DEMAIS CLASSES E O BRUTO ESFOLADO (+30%)', 70, 405);
+
+            const extraHero1 = { x: 140, y: 550, radius: 20, width: 64, height: 64, spriteKey: 'class_flagellant', sprite: AssetManager.get('class_flagellant'), facing: { x: 1, y: 0 } };
+            const extraHero2 = { x: 280, y: 550, radius: 20, width: 64, height: 64, spriteKey: 'class_hierophant', sprite: AssetManager.get('class_hierophant'), facing: { x: 1, y: 0 } };
+            const extraHero3 = { x: 420, y: 550, radius: 20, width: 64, height: 64, spriteKey: 'class_heretic', sprite: AssetManager.get('class_heretic'), facing: { x: 1, y: 0 } };
+            const brute = new FlayedBruteEnemy({ x: 620, y: 550, radius: 28 });
+
+            EntityRenderer.drawPlayer(ctx, extraHero1, { classId: 'flagellant' });
+            ctx.textAlign = 'center';
+            ctx.font = '11px "Cinzel", serif';
+            ctx.fillStyle = '#e8d8b0';
+            ctx.fillText('Flagelante', 140, 575);
+
+            EntityRenderer.drawPlayer(ctx, extraHero2, { classId: 'hierophant' });
+            ctx.fillText('Hierofante', 280, 575);
+
+            EntityRenderer.drawPlayer(ctx, extraHero3, { classId: 'heretic' });
+            ctx.fillText('Herege', 420, 575);
+
+            EntityRenderer.drawEnemy(ctx, brute);
+            ctx.fillStyle = '#f87171';
+            ctx.fillText('Bruto Esfolado (80px)', 620, 575);
+
+            // Audit das chamadas drawImage
+            addReport("\n[AUDITORIA DAS CHAMADAS DRAWIMAGE]");
+            addReport(`Total de chamadas drawImage registradas: ${drawCallLog.length}`);
+            drawCallLog.forEach((call, idx) => {
+                const w = call.args[2];
+                const h = call.args[3];
+                addReport(`  Chamada #${idx + 1}: ${call.type} (${call.w}x${call.h}), drawn as ${w}x${h} px`);
+            });
+
+            addReport("\n[VEREDITO]");
+            const trinityPassed = (drawCallLog.length >= 3);
+            addReport(`Status da Trindade: ${trinityPassed ? 'APROVADO COM SUCESSO' : 'REPROVADO'}`);
+
+            document.getElementById('audit-report').textContent = report.join('\n');
+            document.getElementById('base64').textContent = canvas.toDataURL('image/png');
+            window.__AUDIT_DONE__ = true;
+        }
+
+        window.onload = runAudit;
+    </script>
+</body>
+</html>

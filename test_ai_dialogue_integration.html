@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Teste de Integração - AIDialogueSystem</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/ai-dialogue.css">
+</head>
+<body style="background:#0a0a0c; color:#ded7cd; font-family:monospace; padding:20px;">
+    <h1>TESTE DE INTEGRAÇÃO — SISTEMA DE DIÁLOGO IA (ORÁCULO & NPCS)</h1>
+    <div id="test-log" style="white-space:pre-wrap; line-height:1.5; font-size:13px; background:#141216; padding:15px; border:1px solid #332b22; max-height:800px; overflow-y:auto;"></div>
+
+    <!-- Mock HUD Button -->
+    <header class="top-hud" style="display:none;">
+        <button class="btn-hud-beveled btn-hud-oracle" id="btn-oracle">
+            <span class="rune-icon oracle-rune-pulse">ᛟ</span>
+            <span class="btn-label">Oráculo</span>
+        </button>
+    </header>
+
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/AIDialogueSystem.js"></script>
+
+    <script>
+        const logEl = document.getElementById('test-log');
+        const results = [];
+
+        function log(msg, status = 'INFO') {
+            const line = `[${status}] ${msg}`;
+            logEl.textContent += line + '\n';
+            console.log(line);
+        }
+
+        function assert(cond, name, details = '') {
+            if (cond) {
+                log(`PASS: ${name} ${details}`, 'SUCCESS');
+                results.push({ name, pass: true });
+            } else {
+                log(`FAIL: ${name} ${details}`, 'ERROR');
+                results.push({ name, pass: false });
+            }
+        }
+
+        async function runTests() {
+            log('Iniciando suíte de testes do AIDialogueSystem...');
+
+            // 1. Teste de Instanciação
+            assert(typeof AIDialogueSystem === 'function', 'Classe AIDialogueSystem carregada globalmente');
+
+            const mockState = {
+                character: { className: 'Warmaster', level: 5, currentHp: 80, maxHp: 100 },
+                resources: { gold: 250 }
+            };
+
+            const dialogue = new AIDialogueSystem(mockState);
+            assert(dialogue !== null, 'Instância criada com sucesso');
+
+            // 2. Inicialização e Injeção no DOM
+            dialogue.init();
+            const overlay = document.getElementById('oracle-modal-overlay');
+            const windowEl = document.getElementById('oracle-dialogue-window');
+            assert(overlay !== null, 'Modal overlay injetado no DOM');
+            assert(windowEl !== null, 'Janela de diálogo injetada no DOM');
+
+            // 3. Abertura e Fechamento
+            dialogue.open();
+            assert(dialogue.isOpen === true, 'Estado isOpen torna-se true');
+            assert(overlay.classList.contains('active'), 'Overlay recebe classe "active"');
+
+            dialogue.close();
+            assert(dialogue.isOpen === false, 'Estado isOpen torna-se false ao fechar');
+            assert(!overlay.classList.contains('active'), 'Classe "active" removida do overlay');
+
+            // 4. Alternância de Personas
+            dialogue.open('blacksmith');
+            assert(dialogue.activePersona === 'blacksmith', 'Persona ativa alterada para "blacksmith"');
+            const titleEl = document.getElementById('oracle-title');
+            assert(titleEl.textContent === 'Kaelen', 'Título do cabeçalho reflete nome do Ferreiro');
+
+            dialogue.open('alchemist');
+            assert(dialogue.activePersona === 'alchemist', 'Persona ativa alterada para "alchemist"');
+            assert(titleEl.textContent === 'Morvath', 'Título do cabeçalho reflete nome do Alquimista');
+
+            dialogue.open('merchant');
+            assert(dialogue.activePersona === 'merchant', 'Persona ativa alterada para "merchant"');
+            assert(titleEl.textContent === 'Vesper', 'Título do cabeçalho reflete nome da Mercadora');
+
+            dialogue.open('loremaster');
+            assert(dialogue.activePersona === 'loremaster', 'Persona ativa revertida para "loremaster"');
+            assert(titleEl.textContent === 'Mestre das Cinzas', 'Título do cabeçalho reflete Mestre das Cinzas');
+
+            // 5. Pílulas de Sugestões Rápidas (Quick Prompts)
+            const quickPromptsContainer = document.getElementById('oracle-quick-prompts');
+            const pills = quickPromptsContainer.querySelectorAll('.quick-prompt-btn');
+            assert(pills.length > 0, `Pílulas de perguntas rápidas geradas (${pills.length} encontradas)`);
+
+            // 6. Extração de Contexto do Jogador
+            const ctx = dialogue._extractPlayerContext();
+            assert(ctx.className === 'Warmaster', 'Contexto: classe do personagem extraída corretamente');
+            assert(ctx.level === 5, 'Contexto: nível extraído corretamente');
+            assert(ctx.gold === 250, 'Contexto: ouro extraído corretamente');
+
+            // 7. Sanitização de HTML
+            const sanitized = dialogue._escapeHTML('<script>alert("xss")</script>');
+            assert(!sanitized.includes('<script>'), 'Sanitização de HTML contra XSS funciona');
+
+            // 8. Resumo Final
+            const failed = results.filter(r => !r.pass);
+            if (failed.length === 0) {
+                log(`\nTODOS OS ${results.length} TESTES PASSARAM COM SUCESSO!`, 'SUCCESS');
+                document.body.insertAdjacentHTML('beforeend', '<div id="test-summary" data-status="ALL_PASS">ALL_PASS</div>');
+            } else {
+                log(`\n${failed.length} TESTES FALHARAM!`, 'ERROR');
+                document.body.insertAdjacentHTML('beforeend', '<div id="test-summary" data-status="FAIL">FAIL</div>');
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>

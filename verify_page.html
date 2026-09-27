@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Verification</title>
+</head>
+<body>
+    <div id="output">Running...</div>
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/BlacksmithManager.js"></script>
+    <script src="js/systems/AlchemyManager.js"></script>
+    <script src="js/systems/MarketManager.js"></script>
+    <script src="js/systems/BountyManager.js"></script>
+    <script src="js/systems/IdleEngine.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+    <script>
+        const logs = [];
+        const origLog = console.log;
+        const origErr = console.error;
+        console.log = function(...args) {
+            logs.push(args.join(' '));
+            origLog.apply(console, args);
+            const el = document.getElementById('output');
+            if (el) el.textContent = logs.join('\n');
+        };
+        console.error = function(...args) {
+            logs.push('[ERR] ' + args.join(' '));
+            origErr.apply(console, args);
+            const el = document.getElementById('output');
+            if (el) el.textContent = logs.join('\n');
+        };
+    </script>
+    <script src="verify_integration.js"></script>
+</body>
+</html>

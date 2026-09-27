@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>In-Game Live Render Validation</title>
+    <style>
+        body { margin: 0; background: #000; color: #fff; }
+        canvas { display: block; margin-bottom: 20px; }
+        #data-dumps { display: none; }
+    </style>
+</head>
+<body>
+    <canvas id="hub-canvas" width="1376" height="768"></canvas>
+    <canvas id="dungeon-corridor-canvas" width="1280" height="720"></canvas>
+    <canvas id="dungeon-boss-canvas" width="1280" height="720"></canvas>
+
+    <div id="data-dumps">
+        <div id="hub-base64"></div>
+        <div id="dungeon-corridor-base64"></div>
+        <div id="dungeon-boss-base64"></div>
+        <div id="log-dump"></div>
+    </div>
+
+    <!-- Scripts -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+    <script src="js/ui/HubUI.js"></script>
+
+    <script>
+        const logs = [];
+        function log(msg) { logs.push(msg); console.log(msg); }
+
+        async function run() {
+            try {
+                log('[InGameTest] Preloading all assets via AssetManager...');
+                await AssetManager.loadAll();
+                log(`[InGameTest] Assets loaded: ${AssetManager.readyAssets.size}`);
+
+                const state = new StateManager();
+                state.character = new Character(ClassType.BARBARIAN, BloodlineType.CHILDREN_OF_PYRE);
+                state.character.classId = 'barbarian';
+                state.character.name = 'Mestre da Cinza';
+                state.character.classIcon = 'ᛏ';
+                state.dungeonKeys = 10;
+
+                // ========================================================
+                // 1. HUB COURTYARD (Pátio da Vila)
+                // ========================================================
+                log('[InGameTest] Rendering Hub Courtyard...');
+                const hubCanvas = document.getElementById('hub-canvas');
+                const hubUI = new HubUI(state);
+                hubUI.courtyardCanvas = hubCanvas;
+                hubUI.courtyardCtx = hubCanvas.getContext('2d');
+                hubUI.hero.x = 688;
+                hubUI.hero.y = 420;
+                hubUI.hero.facing = { x: 1, y: 0 };
+                
+                // Carregar fundo do Hub
+                const hubBg = new Image();
+                hubBg.src = './assets/maps/hub_courtyard.jpg';
+                await new Promise(r => { hubBg.onload = r; hubBg.onerror = r; });
+                hubUI.courtyardBg = hubBg;
+                hubUI.bgLoaded = true;
+
+                hubUI._renderCourtyard();
+                document.getElementById('hub-base64').textContent = hubCanvas.toDataURL('image/png');
+                log('[InGameTest] Hub Courtyard rendered successfully!');
+
+                // ========================================================
+                // 2. DUNGEON CORRIDOR (Herói & Inimigo Comum Rastejante/Monge)
+                // ========================================================
+                log('[InGameTest] Rendering Dungeon Corridor with Hero and Common Enemies...');
+                const dCorridorCanvas = document.getElementById('dungeon-corridor-canvas');
+                const dEngine1 = new DungeonEngine(state);
+                dEngine1.mapImage.src = './assets/maps/dungeon_level_1.jpg';
+                await new Promise(r => { dEngine1.mapImage.onload = r; dEngine1.mapImage.onerror = r; });
+
+                dEngine1.enter(dCorridorCanvas);
+                dEngine1.player.x = 1376;
+                dEngine1.player.y = 1220;
+                dEngine1.camera.x = 1376;
+                dEngine1.camera.y = 1220;
+                dEngine1.zoom = 1.6;
+
+                // Spawn common crawler and monk near player
+                dEngine1.enemies = [
+                    new RiftCrawlerEnemy({ x: 1420, y: 1190, name: 'Rastejante do Vazio' }),
+                    new PenitentAutomatonEnemy({ x: 1330, y: 1180, name: 'Monge das Cinzas' })
+                ];
+
+                // Render corridor
+                dEngine1._render();
+                document.getElementById('dungeon-corridor-base64').textContent = dCorridorCanvas.toDataURL('image/png');
+                log('[InGameTest] Dungeon Corridor rendered successfully!');
+
+                // ========================================================
+                // 3. DUNGEON NORTH ARENA (O CHEFE: O Carrasco de Ferro Negro - 180x180 px)
+                // ========================================================
+                log('[InGameTest] Rendering North Arena with Boss (180x180 px)...');
+                const dBossCanvas = document.getElementById('dungeon-boss-canvas');
+                const dEngine2 = new DungeonEngine(state);
+                dEngine2.mapImage.src = './assets/maps/dungeon_level_1.jpg';
+                await new Promise(r => { dEngine2.mapImage.onload = r; dEngine2.mapImage.onerror = r; });
+
+                dEngine2.enter(dBossCanvas);
+                dEngine2.player.x = 1376;
+                dEngine2.player.y = 350;
+                dEngine2.camera.x = 1376;
+                dEngine2.camera.y = 280;
+                dEngine2.zoom = 1.4;
+
+                // Spawn boss
+                const boss = new IronExecutionerBoss({
+                    x: 1376,
+                    y: 220,
+                    name: 'O Carrasco de Ferro Negro'
+                });
+                dEngine2.boss = boss;
+                dEngine2.enemies = [boss];
+                dEngine2.bossFightActive = true;
+
+                // Render boss arena
+                dEngine2._render();
+                document.getElementById('dungeon-boss-base64').textContent = dBossCanvas.toDataURL('image/png');
+                log('[InGameTest] North Arena Boss rendered successfully!');
+
+            } catch (err) {
+                log('[InGameTest Error] ' + err.stack);
+            } finally {
+                document.getElementById('log-dump').textContent = logs.join('\n');
+                window.__ALL_INGAME_DONE__ = true;
+            }
+        }
+
+        window.onload = run;
+    </script>
+</body>
+</html>

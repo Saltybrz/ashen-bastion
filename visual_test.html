@@ -1,0 +1,99 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Test</title>
+    <style>
+        body { margin: 0; background: #080708; overflow: hidden; }
+        canvas { display: block; width: 1200px; height: 700px; }
+    </style>
+</head>
+<body>
+    <canvas id="c" width="1200" height="700"></canvas>
+    <div id="base64"></div>
+    <script src="js/core/utils.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script>
+        async function run() {
+            await AssetLoader.init();
+            const canvas = document.getElementById('c');
+            const ctx = canvas.getContext('2d');
+
+            // Dark stone dungeon floor with subtle grid
+            ctx.fillStyle = '#111014';
+            ctx.fillRect(0, 0, 1200, 700);
+            ctx.strokeStyle = 'rgba(255,255,255,0.04)';
+            for (let x = 0; x < 1200; x += 40) { ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, 700); ctx.stroke(); }
+            for (let y = 0; y < 700; y += 40) { ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(1200, y); ctx.stroke(); }
+
+            // Titles
+            ctx.font = 'bold 18px "Cinzel", serif';
+            ctx.fillStyle = '#c5a059';
+            ctx.fillText('CLASSES DE HERÓIS (Pivô nos Pés + Sombra Elíptica)', 50, 40);
+
+            // 1. Draw Player Classes
+            const classes = [
+                { id: 'warmaster', name: 'Guerreiro da Cinza', x: 100, y: 190 },
+                { id: 'flagellant', name: 'Flagelante das Sombras', x: 230, y: 190 },
+                { id: 'hierophant', name: 'Hierofante da Pira', x: 380, y: 190 },
+                { id: 'heretic', name: 'Herege do Vácuo', x: 520, y: 190 }
+            ];
+
+            for (const c of classes) {
+                EntityRenderer.drawPlayer(ctx, { x: c.x, y: c.y, vx: 0, vy: 0, facing: { x: 1, y: 0 }, radius: 20 }, { classId: c.id });
+                ctx.font = '12px "Cinzel", serif';
+                ctx.fillStyle = '#e8d8b0';
+                ctx.textAlign = 'center';
+                ctx.fillText(c.name, c.x, c.y + 22);
+            }
+
+            // 2. Draw Monsters & Boss
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 18px "Cinzel", serif';
+            ctx.fillStyle = '#cf3a3a';
+            ctx.fillText('CRIATURAS DA FENDA & O CARRASCO (180px)', 50, 270);
+
+            const monsters = [
+                { type: 'crawler', name: 'Rastejante do Vazio', x: 120, y: 440, radius: 18 },
+                { type: 'monk', name: 'Monge das Cinzas', x: 280, y: 440, radius: 22 },
+                { type: 'brute', isElite: true, name: 'Bruto Esfolado (+30%)', x: 460, y: 440, radius: 28, windUpTimer: 0.2 },
+                { type: 'boss', isBoss: true, name: 'O Carrasco de Ferro Negro (180px)', x: 800, y: 480, radius: 48 }
+            ];
+
+            for (const m of monsters) {
+                EntityRenderer.drawEnemy(ctx, m);
+                ctx.font = '12px "Cinzel", serif';
+                ctx.fillStyle = m.isBoss ? '#ef4444' : '#e8d8b0';
+                ctx.textAlign = 'center';
+                ctx.fillText(m.name, m.x, m.y + (m.isBoss ? 35 : 22));
+            }
+
+            // 3. Additive VFX Demonstration
+            ctx.textAlign = 'left';
+            ctx.font = 'bold 18px "Cinzel", serif';
+            ctx.fillStyle = '#fbbf24';
+            ctx.fillText('EFEITOS DE COMBATE (VFX ADITIVO - Fundo Preto Removido por Screen Blending)', 50, 530);
+
+            EntityRenderer.drawCombatVFX(ctx, { x: 140, y: 620, size: 90, angle: 0, vfxType: 'slash', progress: 0.2 });
+            ctx.font = '12px "Cinzel", serif';
+            ctx.fillStyle = '#fbbf24';
+            ctx.textAlign = 'center';
+            ctx.fillText('Arco de Corte / Sangue', 140, 665);
+
+            EntityRenderer.drawCombatVFX(ctx, { x: 340, y: 620, size: 100, angle: 0, vfxType: 'fire', progress: 0.3 });
+            ctx.fillText('Explosão de Fogo / Pira', 340, 665);
+
+            EntityRenderer.drawCombatVFX(ctx, { x: 540, y: 620, size: 95, angle: 0, vfxType: 'void', progress: 0.3 });
+            ctx.fillText('Implosão de Vácuo', 540, 665);
+
+            const b64 = canvas.toDataURL('image/png');
+            document.getElementById('base64').textContent = b64;
+            window.__RENDER_DONE__ = true;
+        }
+        run();
+    </script>
+</body>
+</html>

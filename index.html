@@ -1,0 +1,695 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="In Search of Hope: The Ashen Bastion - RPG Híbrido Idle Tycoon + ARPG de Masmorra">
+    <title>In Search of Hope: The Ashen Bastion</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Cinzel+Decorative:wght@700;900&family=Cinzel:wght@400;600;700;900&family=Crimson+Pro:ital,wght@0,400;0,600;0,700;1,400&family=MedievalSharp&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/hub.css">
+    <link rel="stylesheet" href="css/character.css">
+    <link rel="stylesheet" href="css/inventory.css">
+    <link rel="stylesheet" href="css/dungeon.css">
+    <link rel="stylesheet" href="css/skills.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <link rel="stylesheet" href="css/ai-dialogue.css">
+</head>
+<body>
+    <div id="app">
+        <!-- Loading Screen -->
+        <div id="loading-screen">
+            <div class="loading-content">
+                <h1 class="game-title">In Search of Hope</h1>
+                <h2 class="game-subtitle">The Ashen Bastion</h2>
+                <div class="loading-bar-container">
+                    <div class="loading-bar loading-bar-fill" id="loading-bar"></div>
+                </div>
+                <p class="loading-text" id="loading-text">Abrindo os portões do bastião...</p>
+            </div>
+        </div>
+
+        <!-- Stage A: Cinematic Title Screen (Dark Souls Inspired) -->
+        <div id="title-screen" class="screen hidden">
+            <!-- Fullscreen Background Image (Gothic Courtyard) -->
+            <div class="ts-bg" id="ts-bg"></div>
+
+            <!-- Canvas: Ascending Ash & Ember Particles -->
+            <canvas id="ts-particles" class="ts-particles"></canvas>
+
+            <!-- Deep Asymmetric Vignette (heavier on left third) -->
+            <div class="ts-vignette"></div>
+
+            <!-- Content Layer: Left-aligned, no box/modal/frame -->
+            <div class="ts-content">
+                <!-- Archaic Rune Marker -->
+                <div class="ts-rune-marker">
+                    <span class="rune-icon">ᛟ</span>
+                    <span class="ts-marker-text">O Último Bastião</span>
+                    <span class="rune-icon">ᛟ</span>
+                </div>
+
+                <!-- Main Title -->
+                <h1 class="ts-title">In Search<br>of Hope</h1>
+
+                <!-- Subtitle -->
+                <h2 class="ts-subtitle">The Ashen Bastion</h2>
+
+                <!-- Epitaph -->
+                <p class="ts-epitaph">"Onde as cinzas ainda ardem, a esperança ainda não morreu."</p>
+
+                <!-- Runic Divider -->
+                <div class="ts-runic-divider">
+                    <span class="rune-icon">ᛏ</span>
+                    <span class="ts-divider-line"></span>
+                    <span class="rune-icon">ᛉ</span>
+                    <span class="ts-divider-line"></span>
+                    <span class="rune-icon">ᛋ</span>
+                </div>
+
+                <!-- Navigation Menu (text-only, no boxes) -->
+                <nav class="ts-menu">
+                    <button class="ts-menu-item" id="btn-title-new">
+                        <span class="ts-menu-rune rune-icon">ᛏ</span>
+                        <span class="ts-menu-label">Novo Despertar</span>
+                    </button>
+                    <button class="ts-menu-item" id="btn-title-continue" disabled>
+                        <span class="ts-menu-rune rune-icon">ᛉ</span>
+                        <span class="ts-menu-label">Continuar Penitência</span>
+                    </button>
+                    <button class="ts-menu-item" id="btn-title-settings">
+                        <span class="ts-menu-rune rune-icon">⚙</span>
+                        <span class="ts-menu-label">Configurações</span>
+                    </button>
+                </nav>
+
+                <!-- Save Status -->
+                <div class="ts-save-badge" id="title-save-info">Nenhum registro encontrado nas cinzas</div>
+            </div>
+
+            <!-- Fade-to-Black Transition Overlay -->
+            <div class="ts-fade-overlay" id="ts-fade-overlay"></div>
+        </div>
+
+        <!-- Stage B: Narrative Prologue (Dark Fantasy) -->
+        <div id="prologue-screen" class="screen hidden">
+            <div class="prologue-vignette"></div>
+            <div class="prologue-container">
+                <div class="prologue-header">
+                    <span class="prologue-rune rune-icon">ᛟ</span>
+                </div>
+                <div class="prologue-text-block">
+                    <p class="prologue-paragraph" id="prologue-p1">
+                        O sol se pôs pela última vez há séculos. Nas profundezas da Fenda Abissal, não restam deuses ou reis — apenas cinzas e ecos de quem um dia teve fé.
+                    </p>
+                    <p class="prologue-paragraph quote-separator" id="prologue-p2">
+                        Sobre as ruínas do Último Bastião, você empunha sua lâmina não pela glória, mas pela mais rara e perigosa das loucuras humanas:
+                    </p>
+                    <p class="prologue-paragraph quote-separator highlight-hope" id="prologue-p3">
+                        A busca pela esperança.
+                    </p>
+                </div>
+                <div class="prologue-actions">
+                    <button class="btn-gothic btn-gothic-primary btn-prologue-continue" id="btn-continue-prologue">
+                        <span class="rune-icon">ᛏ</span> Prosseguir à Escolha
+                    </button>
+                    <button class="btn-skip" id="btn-skip-prologue">Pular</button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage C: Bloodline Selection Screen (Linhagem Ancestral) -->
+        <div id="bloodline-selection-screen" class="screen hidden">
+            <div class="bloodline-selection-container">
+                <div class="step-indicator">Etapa I • Linhagem Ancestral</div>
+                <h1 class="section-title">Origens das Cinzas</h1>
+                <p class="section-desc">Quatro linhagens trágicas marcadas pelo destino e forjadas na agonia da Fenda Abissal.</p>
+                <div class="bloodline-grid" id="bloodline-grid"></div>
+                <div class="onboarding-nav">
+                    <button class="btn-gothic btn-gothic-secondary" id="btn-bloodline-back">
+                        <span class="rune-icon">☩</span> Retornar ao Título
+                    </button>
+                    <button class="btn-gothic btn-gothic-primary" id="btn-confirm-bloodline">
+                        <span class="rune-icon">ᛏ</span> Prosseguir à Vocação
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage D: Class Selection Screen (A Vocação) -->
+        <div id="class-selection-screen" class="screen hidden">
+            <div class="class-selection-container">
+                <div class="step-indicator">Etapa II • A Vocação</div>
+                <h1 class="section-title">Escolha seu Campeão</h1>
+                <p class="section-desc">Selecione seu arquétipo de combate. Ele herdará os modificadores da linhagem escolhida.</p>
+                <div class="class-grid" id="class-grid"></div>
+                <div class="onboarding-nav">
+                    <button class="btn-gothic btn-gothic-secondary" id="btn-class-back">
+                        <span class="rune-icon">☩</span> Retornar à Linhagem
+                    </button>
+                    <button class="btn-gothic btn-gothic-primary" id="btn-confirm-class">
+                        <span class="rune-icon">ᛏ</span> Prosseguir ao Juramento
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Stage E: Difficulty Selection Screen (The Rift Oaths) -->
+        <div id="difficulty-selection-screen" class="screen hidden">
+            <div class="difficulty-container">
+                <div class="step-indicator">Etapa III • O Juramento</div>
+                <h1 class="section-title">O Juramento da Fenda</h1>
+                <p class="section-desc">Selecione o nível de penitência. As profundezas punirão os despreparados.</p>
+                <div class="diff-grid" id="difficulty-grid"></div>
+                <div class="onboarding-nav">
+                    <button class="btn-gothic btn-gothic-secondary" id="btn-diff-back">
+                        <span class="rune-icon">☩</span> Retornar à Vocação
+                    </button>
+                    <button class="btn-gothic btn-gothic-primary" id="btn-confirm-diff">
+                        <span class="rune-icon">ᛟ</span> Despertar nas Cinzas
+                    </button>
+                </div>
+            </div>
+        </div>
+
+        <!-- Main Game Screen -->
+        <div id="game-screen" class="screen hidden">
+            <!-- Top HUD -->
+            <header class="top-hud">
+                <div class="hud-left">
+                    <div class="player-info">
+                        <div class="player-avatar" id="player-avatar"></div>
+                        <div class="player-details">
+                            <span class="player-name" id="player-name">Herói</span>
+                            <span class="player-class" id="player-class-label"></span>
+                        </div>
+                    </div>
+                    <div class="player-bars">
+                        <div class="bar-group">
+                            <div class="stat-bar hp-bar">
+                                <div class="bar-fill" id="hp-fill" style="width:100%"></div>
+                                <span class="bar-text" id="hp-text">100/100</span>
+                            </div>
+                        </div>
+                        <div class="bar-group">
+                            <div class="stat-bar resource-bar" id="resource-bar-container">
+                                <div class="bar-fill" id="resource-fill" style="width:100%"></div>
+                                <span class="bar-text" id="resource-text">50/50</span>
+                            </div>
+                        </div>
+                        <div class="xp-bar-wrapper">
+                            <div class="stat-bar xp-bar">
+                                <div class="bar-fill" id="xp-fill" style="width:0%"></div>
+                            </div>
+                            <span class="xp-label">Nv. <span id="player-level">1</span></span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hud-center">
+                    <div class="resource-display">
+                        <div class="resource-item" title="Madeira">
+                            <span class="resource-icon rune-icon">ᚱ</span>
+                            <span class="resource-value" id="res-wood">0</span>
+                        </div>
+                        <div class="resource-item" title="Minério">
+                            <span class="resource-icon rune-icon">🜛</span>
+                            <span class="resource-value" id="res-ore">0</span>
+                        </div>
+                        <div class="resource-item" title="Ouro">
+                            <span class="resource-icon rune-icon">🜚</span>
+                            <span class="resource-value" id="res-gold">0</span>
+                        </div>
+                        <div class="resource-item" title="Cinzas Sagradas">
+                            <span class="resource-icon rune-icon">🜂</span>
+                            <span class="resource-value" id="res-ashes">0</span>
+                        </div>
+                        <div class="resource-item" title="Essências Mágicas">
+                            <span class="resource-icon rune-icon">ᛟ</span>
+                            <span class="resource-value" id="res-essence">0</span>
+                        </div>
+                    </div>
+                </div>
+                <div class="hud-right">
+                    <div class="time-display">
+                        <span class="idle-earnings" id="idle-earnings"></span>
+                    </div>
+                    <div class="hud-buttons">
+                        <button class="btn-hud-beveled" id="btn-inventory" title="Inventário">
+                            <svg class="hud-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M5 9a3 3 0 0 1 3-3h8a3 3 0 0 1 3 3v10a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V9z"></path>
+                                <path d="M5 11l7 4 7-4"></path>
+                                <path d="M9 6V4a1 1 0 0 1 1-1h4a1 1 0 0 1 1 1v2"></path>
+                                <path d="M8 15h8v4H8z"></path>
+                            </svg>
+                            <span class="btn-label">Inventário</span>
+                        </button>
+                        <button class="btn-hud-beveled" id="btn-stats" title="Atributos">
+                            <span class="rune-icon">⛊</span>
+                            <span class="btn-label">Atributos</span>
+                        </button>
+                        <button class="btn-hud-beveled" id="btn-skills" title="Grimório e Rúbricas Ancestrais (K)">
+                            <svg class="hud-svg-icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+                                <path d="M12 21v-7"></path>
+                                <path d="M12 14c-2.2-1.8-4-1.8-6.5-3.5 1-2 3.5-3.5 6.5-3.5 3 0 5.5 1.5 6.5 3.5-2.5 1.7-4.3 1.7-6.5 3.5z"></path>
+                                <path d="M12 10V4"></path>
+                                <path d="M12 7c-1.8-1.5-3.5-2-5.5-2"></path>
+                                <path d="M12 7c1.8-1.5 3.5-2 5.5-2"></path>
+                                <path d="M12 17c-2 2-4 3.5-7 3.5"></path>
+                                <path d="M12 17c2 2 4 3.5 7 3.5"></path>
+                            </svg>
+                            <span class="btn-label">Habilidades</span>
+                            <span class="badge-skill-points hidden" id="skill-points-badge-hud">0</span>
+                        </button>
+                        <button class="btn-hud-beveled" id="btn-ascension" title="Ascensão das Cinzas">
+                            <span class="rune-icon">🜂</span>
+                            <span class="btn-label">Ascensão</span>
+                        </button>
+                        <button class="btn-hud-beveled btn-hud-oracle" id="btn-oracle" title="Oráculo das Cinzas & NPCs (O)">
+                            <span class="rune-icon oracle-rune-pulse">ᛟ</span>
+                            <span class="btn-label">Oráculo</span>
+                        </button>
+                        <button class="btn-hud-beveled" id="btn-settings" title="Configurações do Bastião (ESC)">
+                            <span class="rune-icon">⚙</span>
+                            <span class="btn-label">Opções</span>
+                        </button>
+                    </div>
+                </div>
+            </header>
+
+            <!-- Floating Rubrics Astral Constellation Tooltip -->
+            <div id="rubrics-tooltip" class="rubrics-tooltip" style="display:none;"></div>
+
+            <!-- Tab Navigation (Rebranded & Reorganized) -->
+            <nav class="tab-nav">
+                <button class="tab-btn active" data-tab="hub">
+                    <span class="tab-icon rune-icon">ᛉ</span>
+                    <span class="tab-label">Acampamento</span>
+                </button>
+                <button class="tab-btn" data-tab="dungeon">
+                    <span class="tab-icon rune-icon">†</span>
+                    <span class="tab-label">Masmorra</span>
+                </button>
+                <button class="tab-btn" data-tab="forge_alchemy">
+                    <span class="tab-icon rune-icon">🜛</span>
+                    <span class="tab-label">Forja & Alquimia</span>
+                </button>
+                <button class="tab-btn" data-tab="market_bounties">
+                    <span class="tab-icon rune-icon">🜚</span>
+                    <span class="tab-label">Feira & Editais</span>
+                </button>
+            </nav>
+
+            <!-- Tab Content -->
+            <main class="tab-content">
+                <!-- Hub / Camp Tab -->
+                <section id="tab-hub" class="tab-panel active view-split">
+                    <!-- Hub View Controls (Subnav) -->
+                    <div class="hub-subnav" id="hub-subnav">
+                        <button class="hub-subnav-btn" id="btn-hub-view-courtyard" data-hub-view="courtyard" title="Ver apenas o pátio da vila">
+                            <span class="rune-icon">ᛟ</span> Pátio do Bastião
+                        </button>
+                        <button class="hub-subnav-btn" id="btn-hub-view-gathering" data-hub-view="gathering" title="Ver recursos e extração manual">
+                            <span class="rune-icon">🜛</span> Extração de Recursos
+                        </button>
+                        <button class="hub-subnav-btn" id="btn-hub-view-workers" data-hub-view="workers" title="Ver servos contratados e obras">
+                            <span class="rune-icon">⚒</span> Servos & Obras
+                        </button>
+                        <button class="hub-subnav-btn active" id="btn-hub-view-split" data-hub-view="split" title="Ver pátio e recursos integrados">
+                            <span class="rune-icon">⛊</span> Visão Completa
+                        </button>
+                    </div>
+
+                    <!-- 1. O Pátio da Vila (Walkable 2D Courtyard) -->
+                    <div class="courtyard-wrapper" id="courtyard-wrapper">
+                        <div class="courtyard-canvas-container">
+                            <canvas id="hub-canvas" class="hub-courtyard-canvas" width="1376" height="768"></canvas>
+                            <div class="courtyard-prompt hidden" id="courtyard-prompt">
+                                <span class="prompt-key">E</span>
+                                <span class="prompt-text" id="courtyard-prompt-text">Interagir</span>
+                            </div>
+                            <div class="courtyard-legend">
+                                <span><span class="rune-icon">ᛟ</span> <strong>WASD / Setas / Clique</strong>: Caminhar pelo Bastião • <strong>[E] / Espaço</strong>: Interagir</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- 2. Hub Management Panel (Gathering Nodes, Workers, Camp Upgrades) -->
+                    <div class="hub-management-panel" id="hub-management-panel">
+                        <div class="hub-layout">
+                            <!-- Gathering Nodes Section -->
+                            <div class="gathering-section">
+                                <div class="section-header-bar">
+                                    <h2 class="panel-title">
+                                        <span class="panel-icon rune-icon">🜛</span> Extração de Recursos
+                                    </h2>
+                                    <span class="section-subtitle">Colete madeira rúnica, ferro negro e ouro das profundezas</span>
+                                </div>
+                                <div class="gathering-nodes" id="gathering-nodes"></div>
+                            </div>
+
+                            <!-- Workers Section -->
+                            <div class="workers-section">
+                                <div class="section-header-bar">
+                                    <h2 class="panel-title">
+                                        <span class="panel-icon rune-icon">⚒</span> Servos do Acampamento
+                                    </h2>
+                                    <span class="section-subtitle">Automatize a coleta convocando trabalhadores para o bastião</span>
+                                </div>
+                                <div class="workers-list" id="workers-list"></div>
+                            </div>
+
+                            <!-- Upgrades Section -->
+                            <div class="upgrades-section">
+                                <div class="section-header-bar">
+                                    <h2 class="panel-title">
+                                        <span class="panel-icon rune-icon">⛊</span> Aprimoramentos do Acampamento
+                                    </h2>
+                                    <span class="section-subtitle">Ampliações místicas para aumentar a produtividade e sobrevivência</span>
+                                </div>
+                                <div class="upgrades-list" id="upgrades-list"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Widget Flutuante de Mineração (Canto Inferior Esquerdo) -->
+                    <div class="floating-gathering-widget" id="floating-gathering-widget">
+                        <div class="widget-header">
+                            <span class="widget-title"><span class="rune-icon">🜛</span> Extração Rápida</span>
+                            <button class="widget-btn-expand" id="widget-btn-toggle-panel" title="Alternar visão de recursos">
+                                <span class="rune-icon">🜂</span> Painel
+                            </button>
+                        </div>
+                        <div class="widget-nodes-row">
+                            <!-- Bosque Rúnico (Madeira) -->
+                            <div class="widget-node" id="widget-node-wood_grove" data-node-id="wood_grove">
+                                <button class="widget-btn-gather" id="widget-btn-wood_grove" title="Coletar Madeira">
+                                    <span class="widget-rune">ᚱ</span>
+                                    <span class="widget-label">Bosque</span>
+                                </button>
+                                <div class="widget-bar-track">
+                                    <div class="widget-bar-fill" id="widget-fill-wood_grove" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <!-- Mina de Ferro Negro (Minério) -->
+                            <div class="widget-node" id="widget-node-iron_mine" data-node-id="iron_mine">
+                                <button class="widget-btn-gather" id="widget-btn-iron_mine" title="Extrair Minério">
+                                    <span class="widget-rune">🜛</span>
+                                    <span class="widget-label">Mina</span>
+                                </button>
+                                <div class="widget-bar-track">
+                                    <div class="widget-bar-fill" id="widget-fill-iron_mine" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                            <!-- Leito Aurífero (Ouro) -->
+                            <div class="widget-node" id="widget-node-gold_stream" data-node-id="gold_stream">
+                                <button class="widget-btn-gather" id="widget-btn-gold_stream" title="Recolher Ouro">
+                                    <span class="widget-rune">🜚</span>
+                                    <span class="widget-label">Ouro</span>
+                                </button>
+                                <div class="widget-bar-track">
+                                    <div class="widget-bar-fill" id="widget-fill-gold_stream" style="width: 0%;"></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Dungeon Tab -->
+                <section id="tab-dungeon" class="tab-panel">
+                    <div class="dungeon-gate">
+                        <div class="gate-visual">
+                            <div class="gate-frame">
+                                <div class="gate-portal" id="gate-portal">
+                                    <div class="portal-energy"></div>
+                                </div>
+                            </div>
+                        </div>
+                        <div class="gate-info">
+                            <h2 class="panel-title">A Fenda Abissal</h2>
+                            <p class="gate-desc">Forje uma Chave da Fenda para adentrar as masmorras procedurais.</p>
+                            <div class="key-forge-panel" id="key-forge-panel">
+                                <div class="key-cost" id="key-cost"></div>
+                                <button class="btn btn-forge" id="btn-forge-key">
+                                    <span class="rune-icon">⚿</span> Forjar Chave da Fenda
+                                </button>
+                            </div>
+                            <div class="dungeon-keys">
+                                <span>Chaves: <strong id="dungeon-keys-count">0</strong></span>
+                            </div>
+                            <button class="btn btn-primary btn-lg btn-enter-dungeon" id="btn-enter-dungeon" disabled>
+                                <span class="rune-icon">†</span> Descer à Masmorra
+                            </button>
+                        </div>
+                    </div>
+
+                    <!-- Active Dungeon Canvas (hidden until entered) -->
+                    <div id="dungeon-arena" class="dungeon-arena hidden">
+                        <canvas id="dungeon-canvas"></canvas>
+                        <div class="dungeon-hud">
+                            <div class="dungeon-floor">Andar: <span id="dungeon-floor">1</span></div>
+                            <div class="dungeon-enemies">Inimigos: <span id="dungeon-enemies">0</span></div>
+                            <button class="btn btn-sm btn-danger" id="btn-retreat"><span class="rune-icon">☩</span> Recuar</button>
+                        </div>
+
+                        <!-- Dungeon Potion Belt Quickslots (Keys 1 & 2) -->
+                        <div class="dungeon-potion-hud">
+                            <div class="potion-belt" id="dungeon-potion-belt"></div>
+                            <div class="active-buffs-bar" id="dungeon-active-buffs"></div>
+                        </div>
+
+                        <div class="skill-bar" id="skill-bar"></div>
+                    </div>
+                </section>
+
+                <!-- Forja & Alquimia Tab -->
+                <section id="tab-forge_alchemy" class="tab-panel">
+                    <div class="services-two-col">
+                        <!-- Left: A Bigorna Ancestral -->
+                        <div class="service-block forge-block">
+                            <div class="service-block-header">
+                                <h2 class="panel-title font-cinzel">
+                                    <span class="panel-icon rune-icon">🜛</span> A Bigorna Ancestral
+                                </h2>
+                                <p class="service-subtitle">Aprimore o armamento (+1 a +10) ou desmanche despojos em matérias-primas.</p>
+                                <button type="button" class="btn-gothic-inline-talk" onclick="window.aiDialogueSystem?.open('blacksmith')" title="Falar com Kaelen">
+                                    <span class="rune-icon">🜛</span> Conversar com Kaelen (Ferreiro)
+                                </button>
+                            </div>
+
+                            <div class="forge-item-picker">
+                                <label for="forge-item-select" class="form-label font-cinzel">Selecione o Equipamento:</label>
+                                <select id="forge-item-select" class="gothic-select"></select>
+                            </div>
+
+                            <div id="forge-item-preview" class="forge-preview-area"></div>
+
+                            <div class="salvage-section">
+                                <div class="salvage-header">
+                                    <h3 class="salvage-title font-cinzel">
+                                        <span class="rune-icon">🜂</span> Desmanche de Sucata
+                                    </h3>
+                                    <button class="btn-gothic btn-gothic-secondary btn-sm" id="btn-bulk-salvage">
+                                        <span class="rune-icon">🜛</span> Desmanchar Comuns & Mágicos
+                                    </button>
+                                </div>
+                                <div class="salvage-list" id="forge-salvage-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- Right: O Caldeirão Alquímico -->
+                        <div class="service-block alchemy-block">
+                            <div class="service-block-header">
+                                <h2 class="panel-title font-cinzel">
+                                    <span class="panel-icon rune-icon">🜚</span> O Caldeirão Alquímico
+                                </h2>
+                                <p class="service-subtitle">Destile tônicos arcanos de uso limitado e equipe-os no Cinto de Combate.</p>
+                                <button type="button" class="btn-gothic-inline-talk" onclick="window.aiDialogueSystem?.open('alchemist')" title="Falar com Morvath">
+                                    <span class="rune-icon">🜂</span> Consultar Morvath (Alquimista)
+                                </button>
+                            </div>
+
+                            <!-- Potion Belt Assignment -->
+                            <div class="potion-belt-config">
+                                <h3 class="belt-config-title font-cinzel"><span class="rune-icon">†</span> Cinto de Tônicos (Atalhos na Masmorra)</h3>
+                                <div class="belt-slots-config-grid">
+                                    <div class="belt-config-slot">
+                                        <label class="slot-tag font-cinzel">[Tecla 1]</label>
+                                        <select id="belt-slot-1-select" class="gothic-select"></select>
+                                    </div>
+                                    <div class="belt-config-slot">
+                                        <label class="slot-tag font-cinzel">[Tecla 2]</label>
+                                        <select id="belt-slot-2-select" class="gothic-select"></select>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Recipes List -->
+                            <div class="alchemy-recipes-container">
+                                <h3 class="recipes-title font-cinzel"><span class="rune-icon">🜛</span> Receitas de Tônicos</h3>
+                                <div class="alchemy-recipes-list" id="alchemy-recipes-list"></div>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Feira & Editais Tab -->
+                <section id="tab-market_bounties" class="tab-panel">
+                    <div class="services-two-col">
+                        <!-- Left: A Feira das Cinzas -->
+                        <div class="service-block market-block">
+                            <div class="service-block-header">
+                                <h2 class="panel-title font-cinzel">
+                                    <span class="panel-icon rune-icon">🜚</span> A Feira das Cinzas
+                                </h2>
+                                <p class="service-subtitle">Permuta de matérias com margem de fricção e caravanas de provisões raras.</p>
+                                <button type="button" class="btn-gothic-inline-talk" onclick="window.aiDialogueSystem?.open('merchant')" title="Falar com Vesper">
+                                    <span class="rune-icon">🜚</span> Negociar com Vesper (Mercadora)
+                                </button>
+                            </div>
+
+                            <!-- Resource Barter -->
+                            <div class="market-section">
+                                <h3 class="market-section-title font-cinzel"><span class="rune-icon">ᚱ</span> Permuta de Excedentes</h3>
+                                <div class="market-barter-list" id="market-barter-list"></div>
+                            </div>
+
+                            <!-- Provision Merchant -->
+                            <div class="market-section">
+                                <div class="merchant-header-row">
+                                    <h3 class="market-section-title font-cinzel"><span class="rune-icon">⚿</span> Mercador de Provisões</h3>
+                                    <button class="btn-gothic btn-gothic-secondary btn-sm" id="btn-restock-market">
+                                        <span class="rune-icon">🜚</span> Renovar Estoque (50 Ouro)
+                                    </button>
+                                </div>
+                                <div class="market-provisions-list" id="market-provisions-list"></div>
+                            </div>
+                        </div>
+
+                        <!-- Right: O Quadro de Editais -->
+                        <div class="service-block bounties-block">
+                            <div class="service-block-header">
+                                <h2 class="panel-title font-cinzel">
+                                    <span class="panel-icon rune-icon">ᛏ</span> O Quadro de Editais
+                                </h2>
+                                <p class="service-subtitle">3 contratos simultâneos de Caçada, Extração e Artífice com recompensas gloriosas.</p>
+                            </div>
+
+                            <div class="bounties-list" id="bounties-list"></div>
+                        </div>
+                    </div>
+                </section>
+            </main>
+
+            <!-- Monumental Boss Health Bar (Top of Screen, Dark Souls Inspired) -->
+            <div id="boss-hud-container" class="boss-hud-container hidden">
+                <div class="boss-hud-content">
+                    <div class="boss-title-row">
+                        <span class="boss-rune rune-icon">ᛟ</span>
+                        <div class="boss-names">
+                            <h2 class="boss-name font-cinzel" id="boss-hud-name">O Carrasco de Ferro Negro</h2>
+                            <span class="boss-subtitle font-crimson" id="boss-hud-title">Flagelo da Fenda Abissal</span>
+                        </div>
+                        <span class="boss-rune rune-icon">ᛟ</span>
+                    </div>
+                    <div class="boss-bar-track">
+                        <div class="boss-bar-fill" id="boss-hud-fill" style="width: 100%;"></div>
+                        <div class="boss-bar-glow"></div>
+                        <span class="boss-hp-text" id="boss-hud-text">100%</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Dedicated Ashen Quick-Save Dock (Bottom-Right Floating) -->
+            <div id="ashen-save-dock" class="ashen-save-dock">
+                <button class="btn-ashen-save" id="btn-save" title="Salvar Penitência (Ctrl+S)">
+                    <div class="save-seal-icon">
+                        <span class="rune-icon">ᛟ</span>
+                    </div>
+                    <div class="save-meta">
+                        <span class="save-title font-cinzel">Gravar Penitência</span>
+                        <span class="save-status font-crimson" id="save-status-text">Sincronizado • [Ctrl+S]</span>
+                    </div>
+                </button>
+            </div>
+
+            <!-- Floating Notifications -->
+            <div class="notification-stack" id="notification-stack"></div>
+
+            <!-- Modals -->
+            <div class="modal-overlay hidden" id="modal-overlay">
+                <div class="modal" id="modal-content"></div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Game Engine Scripts (order matters) -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/systems/SettingsManager.js"></script>
+    <script src="js/systems/ScreenShakeManager.js"></script>
+    <script src="js/systems/AudioManager.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/BlacksmithManager.js"></script>
+    <script src="js/systems/AlchemyManager.js"></script>
+    <script src="js/systems/MarketManager.js"></script>
+    <script src="js/systems/BountyManager.js"></script>
+    <script src="js/systems/IdleEngine.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+    <script src="js/ui/TitleScreenFX.js"></script>
+    <script src="js/ui/RubricsCanvas.js"></script>
+    <script src="js/ui/UIManager.js"></script>
+    <script src="js/ui/HubUI.js"></script>
+    <script src="js/ui/DungeonUI.js"></script>
+    <script src="js/ui/CampServicesUI.js"></script>
+    <script src="js/ui/SettingsUI.js"></script>
+    <script src="js/systems/AIDialogueSystem.js"></script>
+    <script src="js/main.js"></script>
+    <!-- Responsividade do Canvas do Hub (Resolução Interna Fixa 1376x768) -->
+    <script>
+        function resizeHubCanvas() {
+            const canvas = document.getElementById('hub-canvas') || document.getElementById('hub-courtyard-canvas');
+            if (!canvas) return;
+            canvas.width = 1376;
+            canvas.height = 768;
+            if (window.hubUI && typeof window.hubUI.onResize === 'function') {
+                window.hubUI.onResize(1376, 768);
+            }
+        }
+        window.addEventListener('resize', resizeHubCanvas);
+        window.resizeHubCanvas = resizeHubCanvas;
+        resizeHubCanvas();
+    </script>
+
+    <!-- Fail-Safe Preloader Watchdog: Regra Absoluta: máx 2.0s de bloqueio -->
+    <script>
+        setTimeout(function() {
+            var ls = document.getElementById('loading-screen') || document.querySelector('.loading-screen');
+            if (ls && ls.style.display !== 'none' && !ls.classList.contains('hidden')) {
+                console.warn('[Fail-Safe Watchdog] Limite de 2s excedido. Forçando desbloqueio do ecrã de carregamento.');
+                ls.style.opacity = '0';
+                ls.classList.add('fade-out');
+                setTimeout(function() {
+                    ls.style.display = 'none';
+                    ls.classList.add('hidden');
+                }, 400);
+            }
+        }, 2000);
+    </script>
+</body>
+</html>

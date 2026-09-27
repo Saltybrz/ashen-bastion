@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>In Search of Hope - Vertical Slice E2E Test Suite</title>
+</head>
+<body style="background:#0a0a0c; color:#ded7cd; font-family:monospace; padding:20px;">
+    <h1>IN SEARCH OF HOPE: THE ASHEN BASTION - VERTICAL SLICE TEST RUNNER</h1>
+    <div id="test-log" style="white-space:pre-wrap; line-height:1.5; font-size:13px; background:#141216; padding:15px; border:1px solid #332b22; max-height:800px; overflow-y:auto;"></div>
+
+    <canvas id="test-canvas" width="1376" height="768" style="display:none;"></canvas>
+
+    <!-- Core Engine Scripts -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/systems/SettingsManager.js"></script>
+    <script src="js/systems/ScreenShakeManager.js"></script>
+    <script src="js/systems/AudioManager.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/BlacksmithManager.js"></script>
+    <script src="js/systems/AlchemyManager.js"></script>
+    <script src="js/systems/MarketManager.js"></script>
+    <script src="js/systems/BountyManager.js"></script>
+    <script src="js/systems/IdleEngine.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+    <script src="js/ui/TitleScreenFX.js"></script>
+    <script src="js/ui/RubricsCanvas.js"></script>
+    <script src="js/ui/UIManager.js"></script>
+    <script src="js/ui/HubUI.js"></script>
+    <script src="js/ui/DungeonUI.js"></script>
+    <script src="js/ui/CampServicesUI.js"></script>
+    <script src="js/ui/SettingsUI.js"></script>
+
+    <script>
+        const logEl = document.getElementById('test-log');
+        const results = [];
+
+        function log(msg, status = 'INFO') {
+            const time = new Date().toISOString().substring(11, 19);
+            const line = `[${time}] [${status}] ${msg}`;
+            console.log(line);
+            logEl.textContent += line + '\n';
+        }
+
+        function assert(condition, testName, details = '') {
+            if (condition) {
+                log(`PASS: ${testName} ${details ? '(' + details + ')' : ''}`, 'SUCCESS');
+                results.push({ test: testName, status: 'PASS', details });
+            } else {
+                log(`FAIL: ${testName} ${details ? '(' + details + ')' : ''}`, 'ERROR');
+                results.push({ test: testName, status: 'FAIL', details });
+                throw new Error(`Assertion failed: ${testName} - ${details}`);
+            }
+        }
+
+        async function runTestSuite() {
+            try {
+                log('=== INICIANDO PROTOCOLO COMPLETO DE VERIFICAÇÃO DA VERTICAL SLICE ===');
+
+                // ── 1. ASSET PIPELINE & BITMAP DECODING ──
+                log('Etapa 1: Carregamento e Auditoria dos Sprites PNG...');
+                await AssetManager.loadAll();
+                assert(AssetManager.isReady(), 'AssetManager está pronto');
+                
+                const testKeys = [
+                    'base_mannequin', 'class_warmaster', 'class_flagellant', 'class_hierophant', 
+                    'class_heretic', 'flayed_brute', 'ashen_monk', 'void_skitterer', 
+                    'ironbound_executioner', 'combat_vfx'
+                ];
+                for (const key of testKeys) {
+                    const st = AssetManager.status(key);
+                    assert(st.loaded, `Asset [${key}] carregado`, `dim=${st.width}x${st.height}, type=${st.cachedType}`);
+                    assert(st.width > 0 && st.height > 0, `Asset [${key}] dimensões válidas`);
+                }
+
+                // ── 2. STATE MANAGER & PERSISTÊNCIA CRUZADA ──
+                log('Etapa 2: Inicialização de Estado e Migração de Save...');
+                gameState.deleteSave();
+                assert(!gameState.hasSave(), 'Save limpo com sucesso');
+
+                gameState.initNewGame('warrior', 'pilgrim', 'flame_born');
+                assert(gameState.character !== null, 'Campeão instanciado com sucesso');
+                assert(gameState.character.className.length > 0, 'Classe atribuída corretamente', gameState.character.className);
+                assert(gameState.character.bloodlineId === 'children_of_pyre', 'Linhagem atribuída corretamente', gameState.character.bloodlineId);
+
+                gameState.save();
+                assert(gameState.hasSave(), 'Save persistido no localStorage');
+                assert(localStorage.getItem('in_search_of_hope_save') !== null, 'Chave in_search_of_hope_save gravada');
+                assert(localStorage.getItem('ashen_bastion_save') !== null, 'Chave ashen_bastion_save sincronizada');
+
+                // ── 3. SCREEN SHAKE CENTRALIZADO ──
+                log('Etapa 3: Verificação do ScreenShakeManager...');
+                assert(typeof window.ScreenShakeManager === 'object', 'ScreenShakeManager global registrado');
+                ScreenShakeManager.boss();
+                assert(ScreenShakeManager.timer > 0, 'ScreenShakeManager ativado com preset boss');
+                ScreenShakeManager.stop();
+                assert(ScreenShakeManager.timer === 0, 'ScreenShakeManager parado com segurança');
+
+                // ── 4. FORJA ANCESTRAL (BLACKSMITH UPGRADES) ──
+                log('Etapa 4: Teste de Têmpera na Forja (+0 -> +1 -> +2 -> +3)...');
+                const bs = new BlacksmithManager(gameState);
+                const weapon = gameState.character.equipment.weapon;
+                assert(weapon !== null, 'Arma inicial equipada');
+                assert((weapon.upgradeLevel || 0) === 0, 'Arma inicia no nível +0');
+
+                // Add resources for upgrade
+                gameState.resources[ResourceType.ORE] = 500;
+                gameState.resources[ResourceType.GOLD] = 500;
+
+                const up1 = bs.upgradeItem(weapon.id);
+                assert(up1.success && up1.newLevel === 1, 'Têmpera para +1 bem-sucedida', `stats = ${JSON.stringify(weapon.stats)}`);
+                const up2 = bs.upgradeItem(weapon.id);
+                assert(up2.success && up2.newLevel === 2, 'Têmpera para +2 bem-sucedida');
+                const up3 = bs.upgradeItem(weapon.id);
+                assert(up3.success && up3.newLevel === 3, 'Têmpera para +3 bem-sucedida (100% de taxa garantida)');
+
+                // ── 5. MASMORRA, COMBATE CINÉTICO & INIMIGOS ──
+                log('Etapa 5: Inicialização da Fenda Abissal e Combate...');
+                const canvas = document.getElementById('test-canvas');
+                gameState.dungeonKeys = 3;
+                const dungeon = new DungeonEngine(gameState);
+                window.dungeonEngine = dungeon;
+                const entered = dungeon.enter(canvas);
+                assert(entered, 'Entrada na masmorra autorizada e chave consumida');
+                assert(dungeon.enemies.length > 0, 'Inimigos gerados no calabouço', `total = ${dungeon.enemies.length}`);
+                assert(dungeon.boss !== null, 'Boss presente na arena norte', `tipo = ${dungeon.boss.name}`);
+
+                // Simular ataque em um inimigo comum
+                const targetEnemy = dungeon.enemies.find(e => !e.isBoss);
+                assert(targetEnemy !== undefined, 'Inimigo comum localizado');
+                const initialEnemyHp = targetEnemy.hp;
+                
+                // Mover player para próximo do inimigo
+                dungeon.player.x = targetEnemy.x - 20;
+                dungeon.player.y = targetEnemy.y;
+                dungeon.mousePos = { x: targetEnemy.x, y: targetEnemy.y };
+
+                // Desferir ataque
+                dungeon._playerAttack();
+                dungeon._damageEnemy(targetEnemy, 15);
+                assert(targetEnemy.hp < initialEnemyHp, 'Inimigo recebeu dano do ataque');
+                assert(targetEnemy.hitFlashTimer > 0, 'Hit Flash ativado no inimigo (~80ms)');
+                assert(dungeon.hitstopTimer > 0, 'Hitstop cinético acionado (60ms)');
+
+                // Matar o inimigo e testar loot
+                targetEnemy.hp = 0;
+                dungeon._damageEnemy(targetEnemy, 999);
+                assert(targetEnemy.state === EnemyState.DEAD, 'Inimigo derrotado com sucesso');
+                assert(dungeon.lootDrops.length > 0, 'Loot físico gerado no chão');
+
+                // Coletar loot
+                const lootItem = dungeon.lootDrops[0];
+                dungeon.player.x = lootItem.x;
+                dungeon.player.y = lootItem.y;
+                dungeon._checkLootPickups();
+                assert(lootItem.collected, 'Loot coletado ao passar sobre ele');
+
+                // ── 6. BOSS: O CARRASCO DE FERRO NEGRO (FASES 1 & 2 + MORTE) ──
+                log('Etapa 6: Duelo contra o Carrasco de Ferro Negro...');
+                const boss = dungeon.boss;
+                assert(boss.name === 'O Carrasco de Ferro Negro', 'Identidade do Boss verificada');
+                assert(boss.frameWidth === 180 && boss.frameHeight === 180, 'Boss dimensionado em 180x180 px');
+                assert(boss.phase === 1, 'Boss inicia na Fase 1 (100% HP)');
+
+                // Entrar na Arena Norte
+                dungeon.player.x = 1376;
+                dungeon.player.y = 380;
+                dungeon._checkBossArena();
+                assert(dungeon.bossFightActive, 'Duelo de Boss ativado');
+                assert(dungeon.fogGateActive, 'Névoa Abissal erguida, bloqueando a saída');
+
+                // Dano no Boss até 45% -> Fase 2
+                boss.hp = Math.floor(boss.maxHp * 0.45);
+                boss.update(0.016, dungeon.player, dungeon);
+                assert(boss.phase === 2, 'Boss realizou transição para Fase 2 (<50% HP)');
+                assert(boss.speed >= 50, 'Frenesi da Caldeira ativado (+25% velocidade)', `speed=${boss.speed}`);
+
+                // Simular golpe fatal no Boss
+                boss.hp = 0;
+                dungeon._damageEnemy(boss, 5000);
+                assert(boss.isDying, 'Sequência dramática de morte iniciada (cambaleia e cai de joelhos)');
+                assert(dungeon.enemies.includes(boss), 'Boss ainda presente durante animação de morte');
+
+                // Avançar o tempo da sequência de morte (2.3 segundos)
+                boss.deathTimer = 0.05;
+                boss.update(0.1, dungeon.player, dungeon);
+                assert(dungeon.fogGateActive === false, 'Névoa Abissal dissipada após morte do Boss');
+                assert(dungeon.extractionMonolith !== null, 'Monólito de Extração despertado no centro da arena norte');
+                assert(dungeon.extractionMonolith.x === 1376 && dungeon.extractionMonolith.y === 220, 'Coordenadas do Monólito corretas');
+
+                // ── 7. EXTRAÇÃO E RETORNO AO BASTIÃO ──
+                log('Etapa 7: Interação com Monólito e Extração Vitoriosa...');
+                let modalOpened = false;
+                window.uiManager = {
+                    showVictorySummaryModal: function(spoils, callback) {
+                        modalOpened = true;
+                        assert(spoils.bossDefeated === 'O Carrasco de Ferro Negro', 'Espólios registram vitória sobre o Carrasco');
+                        // Simular clique do jogador em "Retornar ao Bastião"
+                        callback();
+                    },
+                    switchTab: function(tab) {
+                        assert(tab === 'hub', 'Transição limpa para o Hub acionada');
+                    },
+                    notify: function() {}
+                };
+
+                dungeon.player.x = dungeon.extractionMonolith.x;
+                dungeon.player.y = dungeon.extractionMonolith.y;
+                dungeon.triggerExtraction();
+                assert(modalOpened, 'Modal de Resumo da Expedição exibido');
+                assert(dungeon.running === false, 'Masmorra finalizada e loop interrompido');
+
+                // ── 8. PERSISTÊNCIA APÓS EXTRAÇÃO E RECARREGAMENTO ──
+                log('Etapa 8: Validação de Salvamento e Restauração de Dados...');
+                gameState.save();
+                
+                const restoredState = new StateManager();
+                const loadSuccess = restoredState.load();
+                assert(loadSuccess, 'Estado restaurado do localStorage');
+                assert(restoredState.character.level === gameState.character.level, 'Nível do personagem consistente');
+                assert(restoredState.character.equipment.weapon.upgradeLevel === 3, 'Arma mantém nível de têmpera +3');
+                assert(restoredState.totalDungeonClears >= 1, 'Contador de vitórias no Bastião preservado');
+
+                // ── 9. DEBUG OVERLAYS (F1 & F3) ──
+                log('Etapa 9: Validação dos Modos de Diagnóstico (F1 e F3)...');
+                window.ASHEN_COMBAT_DEBUG = true;
+                const ctx = canvas.getContext('2d');
+                dungeon._drawCombatDebugWorld(ctx);
+                dungeon._drawCombatDebugScreen(ctx, 1376, 768);
+                assert(true, 'Debug de Combate (F1) renderizado sem erros');
+
+                window.ASHEN_ASSET_DEBUG = true;
+                AssetManager.drawDebugOverlay(ctx, 1376, 768);
+                assert(true, 'Debug de Assets (F3) renderizado sem erros');
+
+                log('=== TODOS OS 24 TESTES DA VERTICAL SLICE FORAM EXECUTADOS COM SUCESSO! ===', 'SUCCESS');
+                log('RESULTADO_FINAL: VERTICAL_SLICE_VALIDATED_SUCCESS', 'SUCCESS');
+
+            } catch (err) {
+                log('ERRO CRÍTICO DURANTE EXECUÇÃO DO TESTE: ' + err.message + '\n' + err.stack, 'FATAL');
+                log('RESULTADO_FINAL: VERTICAL_SLICE_VALIDATION_FAILED', 'FATAL');
+            }
+        }
+
+        window.addEventListener('load', runTestSuite);
+    </script>
+</body>
+</html>

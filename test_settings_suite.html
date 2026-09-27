@@ -1,0 +1,185 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Test Suite - Settings System</title>
+    <link rel="stylesheet" href="css/index.css">
+    <link rel="stylesheet" href="css/hub.css">
+    <link rel="stylesheet" href="css/dungeon.css">
+    <link rel="stylesheet" href="css/settings.css">
+    <style>
+        body {
+            background: #0a090c;
+            color: #e5e0d8;
+            font-family: sans-serif;
+            padding: 20px;
+        }
+        #test-report {
+            background: #141218;
+            border: 1px solid #4a381e;
+            padding: 16px;
+            margin-bottom: 20px;
+            border-radius: 6px;
+            font-family: monospace;
+            white-space: pre-wrap;
+            line-height: 1.5;
+        }
+        .pass { color: #4ade80; }
+        .fail { color: #f87171; }
+    </style>
+</head>
+<body>
+    <div id="app"></div>
+    <div id="test-report">Executando Auditoria do Sistema de Configurações...</div>
+    <div id="base64" style="display:none;"></div>
+
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/systems/SettingsManager.js"></script>
+    <script src="js/systems/AudioManager.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/ui/SettingsUI.js"></script>
+
+    <script>
+        const report = [];
+        function assert(condition, message) {
+            if (condition) {
+                report.push(`[PASS] ${message}`);
+            } else {
+                report.push(`[FAIL] ${message}`);
+                console.error('Assertion failed:', message);
+            }
+        }
+
+        window.addEventListener('DOMContentLoaded', async () => {
+            try {
+                // TEST 1: SettingsManager Initialization & Defaults
+                SettingsManager.init();
+                assert(!!SettingsManager.settings, 'SettingsManager foi instanciado e populado');
+                assert(SettingsManager.get('audio.masterVolume') === 0.8, 'Volume Mestre padrão é 0.8 (80%)');
+                assert(SettingsManager.get('audio.sfxVolume') === 0.9, 'Volume SFX padrão é 0.9 (90%)');
+                assert(SettingsManager.get('visual.screenShakeIntensity') === 1.0, 'Tremor de tela padrão é 1.0 (100%)');
+                assert(SettingsManager.get('visual.hitFlashEnabled') === true, 'Flash de Impacto padrão é Ligado');
+                assert(SettingsManager.get('visual.emberDensity') === 'high', 'Densidade de Cinzas padrão é Alta');
+                assert(SettingsManager.get('gameplay.showDamageNumbers') === true, 'Números de Dano padrão é Ligado');
+                assert(SettingsManager.get('gameplay.enemyHealthBars') === 'combat', 'Barras de Vida padrão é "combat"');
+                assert(SettingsManager.get('controls.moveUp') === 'KeyW', 'Mapeamento padrão de mover cima é KeyW');
+
+                // TEST 2: SettingsUI Modal Rendering & DOM
+                SettingsUI.init();
+                const modalEl = document.getElementById('settings-modal-overlay');
+                assert(!!modalEl, 'Modal #settings-modal-overlay foi injetado no DOM');
+
+                SettingsUI.open('audio');
+                assert(modalEl.classList.contains('active'), 'Modal abriu e recebeu classe .active');
+                assert(SettingsUI.isOpen === true, 'SettingsUI.isOpen é true');
+
+                // TEST 3: 4 Heraldic Tabs Switching
+                SettingsUI.switchTab('visual');
+                assert(modalEl.querySelector('.settings-pane[data-pane="visual"]').classList.contains('active'), 'Aba Visual está ativa');
+                SettingsUI.switchTab('gameplay');
+                assert(modalEl.querySelector('.settings-pane[data-pane="gameplay"]').classList.contains('active'), 'Aba Jogabilidade está ativa');
+                SettingsUI.switchTab('controls');
+                assert(modalEl.querySelector('.settings-pane[data-pane="controls"]').classList.contains('active'), 'Aba Controles está ativa');
+                SettingsUI.switchTab('audio');
+                assert(modalEl.querySelector('.settings-pane[data-pane="audio"]').classList.contains('active'), 'Aba Áudio está ativa');
+
+                // TEST 4: Live Sliders and Toggles
+                const masterSlider = modalEl.querySelector('#audio-master');
+                masterSlider.value = 0.5;
+                masterSlider.dispatchEvent(new Event('input'));
+                assert(SettingsUI.workingSettings.audio.masterVolume === 0.5, 'Slider de Volume Mestre atualizou valor de trabalho para 50%');
+
+                const muteToggle = modalEl.querySelector('#toggle-mute-blur');
+                const prevMute = SettingsUI.workingSettings.audio.muteOnBlur;
+                muteToggle.click();
+                assert(SettingsUI.workingSettings.audio.muteOnBlur === !prevMute, 'Interruptor Mutar em Segundo Plano alternou estado');
+
+                // TEST 5: Key Remapping and Conflict Auto-Swap
+                SettingsUI.switchTab('controls');
+                // Simula remapear 'skill1' para 'KeyW' (que pertencia a moveUp)
+                const swapInfo = SettingsManager.remapKey('skill1', 'KeyW');
+                assert(swapInfo.swapped === true, 'Remapeamento detectou conflito e disparou troca de teclas');
+                assert(swapInfo.conflictAction === 'moveUp', 'Conflito identificado corretamente com moveUp');
+                assert(SettingsManager.get('controls.skill1') === 'KeyW', 'skill1 recebeu KeyW');
+                assert(SettingsManager.get('controls.moveUp') === 'KeyQ', 'moveUp recebeu KeyQ via troca automática');
+
+                // TEST 6: LocalStorage Persistence
+                SettingsManager.save();
+                const storedRaw = localStorage.getItem('ashen_bastion_settings');
+                assert(!!storedRaw, 'Registro "ashen_bastion_settings" existe no localStorage');
+                const stored = JSON.parse(storedRaw);
+                assert(stored.controls.skill1 === 'KeyW', 'Configuração persistida com sucesso no localStorage');
+
+                // TEST 7: Reset Defaults with Confirmation
+                SettingsManager.resetDefaults();
+                assert(SettingsManager.get('controls.skill1') === 'KeyQ', 'Restaurar Padrões resetou skill1 para KeyQ');
+                assert(SettingsManager.get('controls.moveUp') === 'KeyW', 'Restaurar Padrões resetou moveUp para KeyW');
+
+                // TEST 8: Audio Engine Multi-Channel
+                assert(!!AudioManager, 'AudioManager global está disponível');
+                assert(typeof AudioManager.updateVolumes === 'function', 'AudioManager.updateVolumes está funcional');
+                assert(typeof AudioManager.playClick === 'function', 'AudioManager.playClick sintetizador presente');
+                assert(typeof AudioManager.playClash === 'function', 'AudioManager.playClash sintetizador presente');
+                assert(typeof AudioManager.playDash === 'function', 'AudioManager.playDash sintetizador presente');
+
+                // TEST 9: Global ESC Key
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+                assert(modalEl.classList.contains('active') === false, 'Pressionar ESC fechou o modal de configurações');
+                window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }));
+                assert(modalEl.classList.contains('active') === true, 'Pressionar ESC novamente reabriu o modal');
+
+                // Display report
+                const reportEl = document.getElementById('test-report');
+                reportEl.textContent = report.join('\n');
+                console.log('--- TEST REPORT ---\n' + report.join('\n'));
+
+                // Render visual representation to base64 for screenshot
+                const canvas = document.createElement('canvas');
+                canvas.width = 1000;
+                canvas.height = 700;
+                const ctx = canvas.getContext('2d');
+                ctx.fillStyle = '#0c0b0e';
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                // Draw gothic frame border
+                ctx.strokeStyle = '#5a4625';
+                ctx.lineWidth = 4;
+                ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
+
+                ctx.fillStyle = '#fbbf24';
+                ctx.font = 'bold 20px "Cinzel", serif';
+                ctx.fillText('⚙ AUDITORIA: SISTEMA CENTRAL DE CONFIGURAÇÕES DO BASTIÃO', 30, 45);
+
+                ctx.fillStyle = '#9c9285';
+                ctx.font = '14px monospace';
+                report.forEach((line, idx) => {
+                    ctx.fillStyle = line.startsWith('[PASS]') ? '#4ade80' : '#f87171';
+                    ctx.fillText(line, 30, 80 + idx * 24);
+                });
+
+                document.getElementById('base64').textContent = canvas.toDataURL('image/png');
+
+            } catch (err) {
+                report.push(`[CRITICAL ERROR] ${err.message}\n${err.stack}`);
+                document.getElementById('test-report').textContent = report.join('\n');
+                console.error(err);
+            }
+        });
+    </script>
+</body>
+</html>

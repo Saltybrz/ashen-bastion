@@ -1,0 +1,56 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Asset Audit & Trinity Validation</title>
+    <style>
+        body { background: #080708; color: #e8d8b0; font-family: monospace; padding: 20px; }
+        canvas { border: 1px solid #785f34; margin: 10px; background: #121014; }
+        .log-box { background: #18151a; border: 1px solid #4a3c28; padding: 12px; margin-top: 20px; white-space: pre-wrap; font-size: 13px; }
+        .pass { color: #4ade80; }
+        .fail { color: #f87171; }
+    </style>
+</head>
+<body>
+    <h1>AUDITORIA DA CADEIA DE ASSETS - A TRINDADE DE VALIDAÇÃO</h1>
+    <div>
+        <div><strong>1. Herói (Pátio & Fenda):</strong></div>
+        <canvas id="canvas-hero" width="200" height="200"></canvas>
+    </div>
+    <div>
+        <div><strong>2. Inimigo Comum (Rastejante / Monge):</strong></div>
+        <canvas id="canvas-common" width="200" height="200"></canvas>
+    </div>
+    <div>
+        <div><strong>3. Chefe (O Carrasco de Ferro Negro - 180x180 px):</strong></div>
+        <canvas id="canvas-boss" width="300" height="300"></canvas>
+    </div>
+    <div id="log-output" class="log-box">Iniciando auditoria...</div>
+
+    <!-- Scripts do Motor -->
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/BlacksmithManager.js"></script>
+    <script src="js/systems/AlchemyManager.js"></script>
+    <script src="js/systems/MarketManager.js"></script>
+    <script src="js/systems/BountyManager.js"></script>
+    <script src="js/systems/IdleEngine.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+    <script src="js/ui/HubUI.js"></script>
+    <script src="test_asset_audit_trinity.js"></script>
+</body>
+</html>

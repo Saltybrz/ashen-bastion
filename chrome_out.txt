@@ -1,0 +1,77 @@
+﻿<!DOCTYPE html>
+<html lang="pt-BR"><head>
+    <meta charset="UTF-8">
+    <title>Verification</title>
+</head>
+<body>
+    <div id="output">[VERIFY] Starting verification...
+[VERIFY OK] AssetLoader is defined
+[AssetLoader] Starting asynchronous asset pipeline with 1.5s fail-safe...
+[AssetLoader] Pipeline initialized. Active sprites in cache: 12
+[VERIFY] AssetLoader ready assets: 12
+[VERIFY OK] Asset loaded: base_mannequin, type: sprite, size: 411x918, chromaKeyed: true
+[VERIFY OK] Asset loaded: class_warmaster, type: sprite, size: 706x960, chromaKeyed: true
+[VERIFY OK] Asset loaded: class_flagellant, type: sprite, size: 810x799, chromaKeyed: true
+[VERIFY OK] Asset loaded: class_hierophant, type: sprite, size: 741x976, chromaKeyed: true
+[VERIFY OK] Asset loaded: class_heretic, type: sprite, size: 804x942, chromaKeyed: true
+[VERIFY OK] Asset loaded: flayed_brute, type: sprite, size: 682x917, chromaKeyed: true
+[VERIFY OK] Asset loaded: ashen_monk, type: sprite, size: 693x911, chromaKeyed: true
+[VERIFY OK] Asset loaded: void_skitterer, type: sprite, size: 859x831, chromaKeyed: true
+[VERIFY OK] Asset loaded: ironbound_executioner, type: sprite, size: 857x872, chromaKeyed: true
+[VERIFY OK] Asset loaded: combat_vfx, type: vfx, size: 1024x1024, chromaKeyed: false
+[VERIFY OK] EntityRenderer is defined
+[VERIFY OK] Successfully rendered player class: warmaster
+[VERIFY OK] Successfully rendered player class: flagellant
+[VERIFY OK] Successfully rendered player class: hierophant
+[VERIFY OK] Successfully rendered player class: heretic
+[VERIFY OK] Successfully rendered RiftCrawler (Void Skitterer)
+[VERIFY OK] Successfully rendered Ashen Monk
+[VERIFY OK] Successfully rendered Flayed Brute
+[VERIFY OK] Successfully rendered Ironbound Executioner Boss
+[VERIFY OK] Successfully rendered Combat VFX (slash)
+[VERIFY OK] Successfully rendered Combat VFX (fire)
+[VERIFY ALL TESTS PASSED]
+[AssetLoader] Fail-safe timer (1.5s) expired. Loaded: 12/12 assets.</div>
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/GatheringNode.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SkillTreeManager.js"></script>
+    <script src="js/systems/AttributeManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/BlacksmithManager.js"></script>
+    <script src="js/systems/AlchemyManager.js"></script>
+    <script src="js/systems/MarketManager.js"></script>
+    <script src="js/systems/BountyManager.js"></script>
+    <script src="js/systems/IdleEngine.js"></script>
+    <script src="js/render/AssetLoader.js"></script>
+    <script src="js/render/PaperdollSystem.js"></script>
+    <script src="js/render/EnemyVisualRenderer.js"></script>
+    <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+    <script>
+        const logs = [];
+        const origLog = console.log;
+        const origErr = console.error;
+        console.log = function(...args) {
+            logs.push(args.join(' '));
+            origLog.apply(console, args);
+            const el = document.getElementById('output');
+            if (el) el.textContent = logs.join('\n');
+        };
+        console.error = function(...args) {
+            logs.push('[ERR] ' + args.join(' '));
+            origErr.apply(console, args);
+            const el = document.getElementById('output');
+            if (el) el.textContent = logs.join('\n');
+        };
+    </script>
+    <script src="verify_integration.js"></script>
+
+
+</body></html>
