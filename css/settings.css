@@ -1,0 +1,531 @@
+/* ============================================================================
+   SETTINGS MODAL & CONTROLS DESIGN SYSTEM
+   In Search of Hope: The Ashen Bastion
+   Gothic Iron, Aged Brass & Amber Runes
+   ============================================================================ */
+
+/* Fullscreen Overlay with semi-translucent vignette and backdrop blur */
+.settings-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 9999;
+    background: radial-gradient(circle at center, rgba(12, 11, 14, 0.84) 0%, rgba(5, 4, 6, 0.95) 100%);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    pointer-events: none;
+    transition: opacity 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+    user-select: none;
+}
+
+.settings-modal-overlay.active {
+    opacity: 1;
+    pointer-events: auto;
+}
+
+/* Gothic Beveled Modal Container */
+.settings-modal-window {
+    width: 780px;
+    max-width: 94vw;
+    height: 640px;
+    max-height: 88vh;
+    background: #0c0b0e;
+    border: 2px solid #5a4625;
+    border-radius: 8px;
+    box-shadow: 0 0 50px rgba(0, 0, 0, 0.95), 
+                inset 0 0 25px rgba(90, 70, 37, 0.3),
+                0 0 1px 1px #8c6d3b;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    position: relative;
+    transform: scale(0.96) translateY(10px);
+    transition: transform 0.24s cubic-bezier(0.16, 1, 0.3, 1);
+}
+
+.settings-modal-overlay.active .settings-modal-window {
+    transform: scale(1) translateY(0);
+}
+
+/* Modal Header */
+.settings-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(180deg, rgba(28, 24, 20, 0.9) 0%, rgba(12, 11, 14, 0.95) 100%);
+    border-bottom: 2px solid #3e2f18;
+    position: relative;
+}
+
+.settings-header::after {
+    content: '';
+    position: absolute;
+    bottom: -2px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8c6d3b, #d97706, #8c6d3b, transparent);
+}
+
+.settings-title-group {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-title-icon {
+    font-size: 20px;
+    color: #d97706;
+    text-shadow: 0 0 10px rgba(217, 119, 6, 0.6);
+}
+
+.settings-title-text {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 1.18rem;
+    letter-spacing: 2px;
+    color: #e5e0d8;
+    text-shadow: 0 2px 4px rgba(0, 0, 0, 0.9);
+}
+
+.settings-close-btn {
+    background: transparent;
+    border: 1px solid #4a381e;
+    color: #9c9285;
+    font-size: 18px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.settings-close-btn:hover {
+    color: #fbbf24;
+    border-color: #d97706;
+    background: rgba(217, 119, 6, 0.15);
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.4);
+}
+
+/* 4 Heraldic Navigation Tabs */
+.settings-tabs-bar {
+    display: flex;
+    background: #09080b;
+    border-bottom: 1px solid #2a2216;
+    padding: 0 16px;
+    gap: 8px;
+}
+
+.settings-tab-btn {
+    flex: 1;
+    background: transparent;
+    border: none;
+    border-bottom: 3px solid transparent;
+    color: #8c8273;
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 0.88rem;
+    letter-spacing: 1px;
+    padding: 13px 8px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    text-shadow: 0 1px 2px rgba(0,0,0,0.8);
+}
+
+.settings-tab-btn:hover {
+    color: #e5e0d8;
+    background: rgba(217, 119, 6, 0.05);
+}
+
+.settings-tab-btn.active {
+    color: #fbbf24;
+    border-bottom-color: #d97706;
+    background: linear-gradient(180deg, rgba(217, 119, 6, 0.08) 0%, rgba(217, 119, 6, 0.01) 100%);
+    text-shadow: 0 0 8px rgba(251, 191, 36, 0.5);
+}
+
+.settings-tab-btn .tab-icon {
+    font-size: 15px;
+    color: #d97706;
+}
+
+/* Content Container with Aged Gold Scrollbar */
+.settings-content-wrapper {
+    flex: 1;
+    overflow-y: auto;
+    padding: 24px;
+    background: #0c0b0e;
+    scrollbar-width: thin;
+    scrollbar-color: #5a4625 #0c0b0e;
+}
+
+.settings-content-wrapper::-webkit-scrollbar {
+    width: 7px;
+}
+
+.settings-content-wrapper::-webkit-scrollbar-track {
+    background: #0c0b0e;
+}
+
+.settings-content-wrapper::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, #785a28, #3e2f18);
+    border: 1px solid #9a7638;
+    border-radius: 4px;
+}
+
+.settings-content-wrapper::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #9a7638, #5a4625);
+}
+
+/* Tab Pane Visibility */
+.settings-pane {
+    display: none;
+    flex-direction: column;
+    gap: 20px;
+    animation: settingsFadeIn 0.2s ease;
+}
+
+.settings-pane.active {
+    display: flex;
+}
+
+@keyframes settingsFadeIn {
+    from { opacity: 0; transform: translateY(4px); }
+    to { opacity: 1; transform: translateY(0); }
+}
+
+/* Setting Row Architecture */
+.setting-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 14px 18px;
+    background: rgba(18, 16, 21, 0.65);
+    border: 1px solid #2a2216;
+    border-radius: 6px;
+    transition: border-color 0.15s ease, background 0.15s ease;
+}
+
+.setting-row:hover {
+    border-color: #4a381e;
+    background: rgba(24, 21, 28, 0.85);
+}
+
+.setting-info {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-width: 55%;
+}
+
+.setting-label {
+    font-family: 'Cinzel', serif;
+    font-weight: 600;
+    font-size: 0.94rem;
+    color: #e5e0d8;
+    letter-spacing: 0.5px;
+}
+
+.setting-description {
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.88rem;
+    color: #9c9285;
+    line-height: 1.3;
+}
+
+/* Setting Controls */
+.setting-control {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    justify-content: flex-end;
+}
+
+/* Custom Brass Range Slider */
+.settings-slider-wrapper {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+.settings-slider {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 170px;
+    height: 6px;
+    background: #1e1913;
+    border: 1px solid #3e2f18;
+    border-radius: 3px;
+    outline: none;
+    cursor: pointer;
+    transition: background 0.2s;
+}
+
+.settings-slider:hover {
+    border-color: #785a28;
+}
+
+.settings-slider::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    appearance: none;
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f59e0b, #92400e);
+    border: 2px solid #fef3c7;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.8), 0 0 6px rgba(217, 119, 6, 0.5);
+    cursor: pointer;
+    transition: transform 0.1s, box-shadow 0.1s;
+}
+
+.settings-slider::-webkit-slider-thumb:hover {
+    transform: scale(1.15);
+    box-shadow: 0 0 10px rgba(245, 158, 11, 0.8);
+}
+
+.settings-slider::-moz-range-thumb {
+    width: 18px;
+    height: 18px;
+    border-radius: 50%;
+    background: radial-gradient(circle at 35% 35%, #f59e0b, #92400e);
+    border: 2px solid #fef3c7;
+    box-shadow: 0 0 6px rgba(0, 0, 0, 0.8), 0 0 6px rgba(217, 119, 6, 0.5);
+    cursor: pointer;
+}
+
+.settings-slider-value {
+    min-width: 44px;
+    text-align: right;
+    font-family: 'Cinzel', serif;
+    font-size: 0.9rem;
+    font-weight: 700;
+    color: #fbbf24;
+}
+
+/* Runic Toggle Switch (Interruptores com Glifos) */
+.settings-toggle-btn {
+    background: #141117;
+    border: 1.5px solid #3e2f18;
+    color: #635747;
+    padding: 6px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    letter-spacing: 0.5px;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s ease;
+}
+
+.settings-toggle-btn .toggle-rune {
+    font-size: 15px;
+    color: #4b3d2a;
+    transition: all 0.2s ease;
+}
+
+.settings-toggle-btn:hover {
+    border-color: #6b4e23;
+    color: #b0a494;
+}
+
+.settings-toggle-btn.active {
+    background: rgba(217, 119, 6, 0.14);
+    border-color: #d97706;
+    color: #fbbf24;
+    box-shadow: 0 0 10px rgba(217, 119, 6, 0.35), inset 0 0 8px rgba(217, 119, 6, 0.2);
+}
+
+.settings-toggle-btn.active .toggle-rune {
+    color: #facc15;
+    text-shadow: 0 0 8px #facc15;
+}
+
+/* Segmented Options Group (Pills) */
+.settings-pill-group {
+    display: flex;
+    background: #0f0d11;
+    border: 1px solid #332717;
+    border-radius: 5px;
+    overflow: hidden;
+}
+
+.settings-pill-btn {
+    background: transparent;
+    border: none;
+    border-right: 1px solid #2a2014;
+    color: #8c8273;
+    font-family: 'Cinzel', serif;
+    font-size: 0.82rem;
+    padding: 6px 14px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+}
+
+.settings-pill-btn:last-child {
+    border-right: none;
+}
+
+.settings-pill-btn:hover {
+    color: #e5e0d8;
+    background: rgba(255, 255, 255, 0.04);
+}
+
+.settings-pill-btn.active {
+    background: linear-gradient(180deg, #785a28 0%, #3e2f18 100%);
+    color: #fef3c7;
+    font-weight: 700;
+    box-shadow: inset 0 0 6px rgba(0,0,0,0.6);
+}
+
+/* Key Remapping Rows (Aba 4: Controles) */
+.remap-list {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.remap-slot-btn {
+    min-width: 140px;
+    background: #141117;
+    border: 1.5px solid #4a381e;
+    color: #f3eedf;
+    font-family: 'Cinzel', serif;
+    font-size: 0.85rem;
+    font-weight: 600;
+    padding: 7px 14px;
+    border-radius: 4px;
+    cursor: pointer;
+    text-align: center;
+    transition: all 0.15s ease;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.4);
+}
+
+.remap-slot-btn:hover {
+    border-color: #d97706;
+    background: #1d1820;
+    color: #fbbf24;
+}
+
+.remap-slot-btn.listening {
+    border-color: #fbbf24;
+    background: rgba(245, 158, 11, 0.2);
+    color: #fef08a;
+    animation: remapPulse 0.8s infinite alternate;
+}
+
+@keyframes remapPulse {
+    from { box-shadow: 0 0 4px #d97706; }
+    to { box-shadow: 0 0 14px #fbbf24; }
+}
+
+.remap-status-banner {
+    padding: 10px 14px;
+    background: rgba(217, 119, 6, 0.1);
+    border: 1px dashed #d97706;
+    border-radius: 4px;
+    color: #fef3c7;
+    font-family: 'Crimson Pro', serif;
+    font-size: 0.94rem;
+    margin-top: 10px;
+    display: none;
+}
+
+.remap-status-banner.show {
+    display: block;
+}
+
+/* Action Footer */
+.settings-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 16px 24px;
+    background: linear-gradient(0deg, rgba(20, 18, 15, 0.95) 0%, rgba(12, 11, 14, 0.95) 100%);
+    border-top: 2px solid #3e2f18;
+    position: relative;
+}
+
+.settings-footer::before {
+    content: '';
+    position: absolute;
+    top: -2px;
+    left: 10%;
+    right: 10%;
+    height: 1px;
+    background: linear-gradient(90deg, transparent, #8c6d3b, #d97706, #8c6d3b, transparent);
+}
+
+.settings-footer-left,
+.settings-footer-right {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+}
+
+/* Gothic Buttons */
+.btn-settings-action {
+    font-family: 'Cinzel', serif;
+    font-weight: 700;
+    font-size: 0.86rem;
+    letter-spacing: 1px;
+    padding: 9px 18px;
+    border-radius: 4px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.btn-settings-reset {
+    background: transparent;
+    border: 1.5px solid #4a2828;
+    color: #c98282;
+}
+
+.btn-settings-reset:hover {
+    border-color: #ef4444;
+    color: #fca5a5;
+    background: rgba(239, 68, 68, 0.12);
+    box-shadow: 0 0 10px rgba(239, 68, 68, 0.3);
+}
+
+.btn-settings-cancel {
+    background: #141117;
+    border: 1.5px solid #4a381e;
+    color: #a89f91;
+}
+
+.btn-settings-cancel:hover {
+    border-color: #785a28;
+    color: #e5e0d8;
+    background: #1c1820;
+}
+
+.btn-settings-apply {
+    background: linear-gradient(180deg, #b45309 0%, #78350f 100%);
+    border: 1.5px solid #f59e0b;
+    color: #fef3c7;
+    box-shadow: 0 0 14px rgba(217, 119, 6, 0.4);
+    text-shadow: 0 1px 3px rgba(0, 0, 0, 0.9);
+}
+
+.btn-settings-apply:hover {
+    background: linear-gradient(180deg, #d97706 0%, #92400e 100%);
+    border-color: #fde68a;
+    box-shadow: 0 0 20px rgba(245, 158, 11, 0.6);
+    transform: translateY(-1px);
+}

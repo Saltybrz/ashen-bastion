@@ -1,0 +1,120 @@
+/* ==========================================================================
+   INVENTORY & EQUIPMENT — DARK FANTASY ARPG CHEST COMPARTMENTS
+   Style: Rustic Iron Bound Chest, Beveled Wood & Metal Slots
+   ========================================================================== */
+
+.inventory-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(50px, 1fr));
+    gap: 5px;
+    margin-bottom: var(--space-lg);
+    background: #09080b;
+    padding: var(--space-sm);
+    border: 2px solid #332d28;
+    outline: 1px solid #000;
+    box-shadow: inset 0 0 16px #000;
+}
+
+/* Rustic Compartment Slot */
+.inv-slot {
+    aspect-ratio: 1;
+    background: #110f13;
+    border: 1px solid #2b262d;
+    outline: 1px solid #08070a;
+    outline-offset: -2px;
+    border-radius: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    position: relative;
+    font-size: 1.4rem;
+    box-shadow: inset 0 0 8px #000;
+}
+
+.inv-slot:hover {
+    border-color: var(--border-brass);
+    background: #18151c;
+    box-shadow: inset 0 0 10px rgba(197, 160, 89, 0.2);
+}
+
+.inv-slot.has-item {
+    border-color: var(--slot-rarity, #3a383c);
+    background: radial-gradient(circle at center, rgba(30, 26, 32, 0.9) 0%, #0d0c0f 100%);
+    box-shadow: inset 0 0 8px #000, 0 2px 4px rgba(0,0,0,0.8);
+}
+
+.inv-slot.has-item:hover {
+    box-shadow: inset 0 0 12px color-mix(in srgb, var(--slot-rarity, var(--accent-ember)) 40%, transparent),
+                0 0 10px color-mix(in srgb, var(--slot-rarity, var(--accent-ember)) 30%, transparent);
+    transform: translateY(-1px);
+}
+
+/* ---------- Item Tooltip (Grimoire & Ancient Artifact Tablet) ---------- */
+.item-tooltip {
+    position: absolute;
+    bottom: calc(100% + 8px);
+    left: 50%;
+    transform: translateX(-50%);
+    background: #121014;
+    border: 2px solid var(--slot-rarity, var(--border-brass));
+    outline: 1px solid #060507;
+    outline-offset: -3px;
+    border-radius: 0;
+    padding: var(--space-md);
+    min-width: 240px;
+    z-index: 7000;
+    box-shadow: inset 0 0 16px #000, 0 12px 32px rgba(0, 0, 0, 0.95);
+    pointer-events: none;
+    opacity: 0;
+    transition: opacity 0.15s ease;
+}
+
+.inv-slot:hover .item-tooltip { opacity: 1; }
+
+.tooltip-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    margin-bottom: 2px;
+    text-shadow: 0 2px 4px #000;
+}
+
+.tooltip-rarity {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    margin-bottom: var(--space-sm);
+    color: var(--slot-rarity, var(--accent-gold));
+}
+
+.tooltip-stat {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: #c9c1b5;
+    padding: 2px 0;
+    text-shadow: 0 1px 2px #000;
+}
+
+.tooltip-stat .affix-value {
+    color: #e2c27c;
+    font-weight: 700;
+}
+
+.tooltip-divider {
+    height: 1px;
+    background: linear-gradient(90deg, transparent 5%, var(--border-brass) 50%, transparent 95%);
+    margin: var(--space-sm) 0;
+}
+
+.tooltip-flavor {
+    font-family: var(--font-body);
+    font-size: 0.85rem;
+    color: var(--text-muted);
+    font-style: italic;
+    line-height: 1.4;
+    text-shadow: 0 1px 2px #000;
+}

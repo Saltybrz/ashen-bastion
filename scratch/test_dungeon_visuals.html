@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>In Search of Hope - Art Direction Showcase</title>
+    <style>
+        body {
+            margin: 0;
+            background: #09080A;
+            color: #dcd8d0;
+            font-family: 'Cinzel', serif;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 20px;
+        }
+        h1 {
+            color: #c5a059;
+            margin: 4px 0;
+            font-size: 24px;
+            letter-spacing: 2px;
+        }
+        h2 {
+            color: #8e8c89;
+            margin: 2px 0 16px 0;
+            font-size: 14px;
+            font-weight: normal;
+        }
+        canvas {
+            border: 2px solid #2a2227;
+            background: #111014;
+            box-shadow: 0 8px 30px rgba(0,0,0,0.9);
+        }
+    </style>
+</head>
+<body>
+    <h1>THE ASHEN BASTION — ART DIRECTION & VISUAL SYSTEM</h1>
+    <h2>Top-Down Inclinada (15°-20°) | Paperdoll Rig & Enemy Visual Renderer</h2>
+    <canvas id="showcase-canvas" width="1376" height="768"></canvas>
+
+    <script src="../js/core/constants.js"></script>
+    <script src="../js/core/utils.js"></script>
+    <script src="../js/utils/Utils.js"></script>
+    <script src="../js/models/Item.js"></script>
+    <script src="../js/models/Character.js"></script>
+    <script src="../js/render/PaperdollSystem.js"></script>
+    <script src="../js/render/EnemyVisualRenderer.js"></script>
+
+    <script>
+        const canvas = document.getElementById('showcase-canvas');
+        const ctx = canvas.getContext('2d');
+
+        // Draw Dark Stone Background Grid
+        ctx.fillStyle = '#0c0a0e';
+        ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.03)';
+        ctx.lineWidth = 1;
+        for (let x = 0; x < canvas.width; x += 40) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, canvas.height); ctx.stroke();
+        }
+        for (let y = 0; y < canvas.height; y += 40) {
+            ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(canvas.width, y); ctx.stroke();
+        }
+
+        // Section Headers
+        ctx.font = 'bold 13px "Cinzel", serif';
+        ctx.textAlign = 'left';
+        ctx.fillStyle = '#c5a059';
+        ctx.fillText('1. AS 4 CLASSES & LINHAGENS INICIAIS (TOP-DOWN 15°-20° PAPERDOLL)', 40, 36);
+
+        // 1. Draw 4 Classes / Lineages
+        const classShowcase = [
+            { name: 'Guerreiro da Cinza', lineageId: 'children_of_pyre', classId: 'ashen_warmaster', x: 120, y: 120 },
+            { name: 'Flagelante das Sombras', lineageId: 'decaying_nobility', classId: 'penitent_stalker', x: 280, y: 120 },
+            { name: 'Hierofante da Pira', lineageId: 'flayed_automaton', classId: 'pyre_hierophant', x: 440, y: 120 },
+            { name: 'Herege do Vácuo', lineageId: 'void_touched', classId: 'void_heretic', x: 600, y: 120 },
+        ];
+
+        for (const item of classShowcase) {
+            const dummyPlayer = {
+                x: item.x,
+                y: item.y,
+                facing: { x: 0, y: 1 },
+                vx: 0, vy: 0,
+                iFrames: 0,
+                isMoving: false,
+                isDashing: false,
+            };
+            PaperdollSystem.drawCharacter(ctx, dummyPlayer, { lineageId: item.lineageId, classId: item.classId }, 0.016);
+
+            // Label
+            ctx.font = 'bold 11px "Cinzel", serif';
+            ctx.textAlign = 'center';
+            ctx.fillStyle = '#dcd8d0';
+            ctx.fillText(item.name, item.x, item.y + 44);
+            ctx.font = '9px "Cinzel", serif';
+            ctx.fillStyle = '#7d7569';
+            ctx.fillText(item.lineageId, item.x, item.y + 58);
+        }
+
+        // 2. Draw 4 Enemy Families (Common & Elite)
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 13px "Cinzel", serif';
+        ctx.fillStyle = '#c5a059';
+        ctx.fillText('2. AS 4 FAMÍLIAS DE INIMIGOS (COMUM, VETERANO, ELITE, CAMPEÃO)', 40, 230);
+
+        const enemyShowcase = [
+            { name: 'Os Esfolados (Comum)', familyId: 'the_flayed', variantTier: 'common', x: 120, y: 320, hp: 50 },
+            { name: 'Os Esfolados (Elite)', familyId: 'the_flayed', variantTier: 'elite', x: 260, y: 320, hp: 90 },
+            { name: 'Congregação (Comum)', familyId: 'ashen_coven', variantTier: 'common', x: 420, y: 320, hp: 60 },
+            { name: 'Congregação (Campeão)', familyId: 'ashen_coven', variantTier: 'champion', x: 580, y: 320, hp: 120 },
+            { name: 'Cria do Vácuo (Comum)', familyId: 'void_spawn', variantTier: 'common', x: 740, y: 320, hp: 45 },
+            { name: 'Cria do Vácuo (Elite)', familyId: 'void_spawn', variantTier: 'elite', x: 890, y: 320, hp: 85 },
+            { name: 'Besta da Peste (Comum)', familyId: 'blighted_brood', variantTier: 'common', x: 1040, y: 320, hp: 40 },
+            { name: 'Besta da Peste (Campeão)', familyId: 'blighted_brood', variantTier: 'champion', x: 1200, y: 320, hp: 110 },
+        ];
+
+        for (const mon of enemyShowcase) {
+            const dummyEnemy = {
+                x: mon.x,
+                y: mon.y,
+                vx: 0, vy: 0,
+                facing: { x: 0, y: 1 },
+                hp: mon.hp, maxHp: 100,
+                radius: 14,
+                familyId: mon.familyId,
+                variantTier: mon.variantTier,
+                isElite: mon.variantTier === 'elite' || mon.variantTier === 'champion',
+                isChampion: mon.variantTier === 'champion',
+                name: mon.name,
+                state: 'STATE_IDLE',
+            };
+            EnemyVisualRenderer.drawEnemy(ctx, dummyEnemy, 0.016);
+        }
+
+        // 3. Draw 3 Bosses (Phase 1 & Phase 2)
+        ctx.textAlign = 'left';
+        ctx.font = 'bold 13px "Cinzel", serif';
+        ctx.fillStyle = '#c5a059';
+        ctx.fillText('3. OS TRÊS PRIMEIROS CHEFES MONUMENTAIS (FASES 1 E 2)', 40, 420);
+
+        const bossShowcase = [
+            { name: 'O Carrasco de Ferro Negro (Fase 1)', bossType: 'iron_executioner', phase: 1, x: 180, y: 560, hp: 300, maxHp: 300 },
+            { name: 'O Carrasco (Fase 2: Fornalha Aberta)', bossType: 'iron_executioner', phase: 2, x: 420, y: 560, hp: 120, maxHp: 300 },
+            { name: 'A Matriarca dos Tecidos Cegos (Fase 1)', bossType: 'blind_weft_matriarch', phase: 1, x: 700, y: 560, hp: 280, maxHp: 280 },
+            { name: 'A Matriarca (Fase 2: Sem Máscara)', bossType: 'blind_weft_matriarch', phase: 2, x: 920, y: 560, hp: 80, maxHp: 280 },
+            { name: 'O Observador da Fenda (Fase 1)', bossType: 'shattered_gazer', phase: 1, x: 1120, y: 560, hp: 320, maxHp: 320 },
+            { name: 'O Observador (Fase 2: Trino)', bossType: 'shattered_gazer', phase: 2, x: 1280, y: 560, hp: 110, maxHp: 320 },
+        ];
+
+        for (const b of bossShowcase) {
+            const dummyBoss = {
+                x: b.x,
+                y: b.y,
+                vx: 0, vy: 0,
+                facing: { x: 0, y: 1 },
+                hp: b.hp, maxHp: b.maxHp,
+                radius: 28,
+                isBoss: true,
+                bossType: b.bossType,
+                variantTier: 'boss',
+                bossScale: 1.8,
+                phase: b.phase,
+                name: b.name,
+                state: 'STATE_IDLE',
+            };
+            EnemyVisualRenderer.drawEnemy(ctx, dummyBoss, 0.016);
+        }
+    </script>
+</body>
+</html>

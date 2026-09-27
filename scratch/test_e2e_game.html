@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>E2E Game Visual Rig Test</title>
+</head>
+<body>
+    <div id="results">Running E2E tests...</div>
+    <canvas id="hub-canvas" width="1376" height="768"></canvas>
+    <canvas id="dungeon-canvas" width="1376" height="768"></canvas>
+
+    <!-- Core Game Scripts in Exact Order -->
+    <script src="../js/core/constants.js"></script>
+    <script src="../js/core/utils.js"></script>
+    <script src="../js/models/PlayerProgression.js"></script>
+    <script src="../js/models/SkillTree.js"></script>
+    <script src="../js/utils/Utils.js"></script>
+    <script src="../js/models/Item.js"></script>
+    <script src="../js/models/Character.js"></script>
+    <script src="../js/models/Building.js"></script>
+    <script src="../js/models/GatheringNode.js"></script>
+    <script src="../js/models/LootTable.js"></script>
+    <script src="../js/systems/StateManager.js"></script>
+    <script src="../js/systems/SkillTreeManager.js"></script>
+    <script src="../js/systems/AttributeManager.js"></script>
+    <script src="../js/systems/CombatController.js"></script>
+    <script src="../js/render/PaperdollSystem.js"></script>
+    <script src="../js/render/EnemyVisualRenderer.js"></script>
+    <script src="../js/systems/DungeonEngine.js"></script>
+    <script src="../js/systems/HubEngine.js"></script>
+    <script src="../js/ui/HubUI.js"></script>
+
+    <script>
+        const res = document.getElementById('results');
+        const out = [];
+
+        try {
+            // 1. Initialize StateManager
+            const state = new StateManager();
+            state.initNewGame('barbarian', 'pilgrim', 'children_of_pyre');
+            out.push('PASS: Character created with lineage and class via initNewGame');
+
+            // 2. Test HubUI Courtyard Hero Render
+            const hubUI = new HubUI(state, null, null);
+            hubUI._renderCourtyard();
+            out.push('PASS: HubUI._renderCourtyard executed with PaperdollSystem');
+
+            // 3. Test DungeonEngine Initialization & Enemy/Boss Generation
+            const dungeonCanvas = document.getElementById('dungeon-canvas');
+            const dungeonEngine = new DungeonEngine(state);
+            window.dungeonEngine = dungeonEngine;
+
+            // Give player keys to enter
+            state.dungeonKeys = 5;
+            const entered = dungeonEngine.enter(dungeonCanvas);
+            out.push('PASS: DungeonEngine.enter returned: ' + entered);
+
+            // Verify enemies generated
+            out.push('PASS: Enemies count on floor 1: ' + dungeonEngine.enemies.length);
+            const boss = dungeonEngine.boss;
+            out.push('PASS: Boss on floor 1: ' + (boss ? boss.name : 'null'));
+
+            // 4. Render 5 frames of Dungeon
+            for (let f = 0; f < 5; f++) {
+                dungeonEngine._update(0.016);
+                dungeonEngine._render();
+            }
+            out.push('PASS: 5 frames of DungeonEngine _update and _render completed smoothly');
+
+            // 5. Test Floor 2 (Blind Weft Matriarch) & Floor 3 (Shattered Gazer)
+            dungeonEngine.floor = 2;
+            dungeonEngine._generateFloor();
+            out.push('PASS: Floor 2 Boss generated: ' + dungeonEngine.boss.name + ' (' + dungeonEngine.boss.bossType + ')');
+            dungeonEngine._render();
+
+            dungeonEngine.floor = 3;
+            dungeonEngine._generateFloor();
+            out.push('PASS: Floor 3 Boss generated: ' + dungeonEngine.boss.name + ' (' + dungeonEngine.boss.bossType + ')');
+            dungeonEngine._render();
+
+            // 6. Test all 4 Lineages in Character Model with DungeonEngine
+            const lineages = ['children_of_pyre', 'decaying_nobility', 'void_touched', 'flayed_automaton'];
+            for (const lin of lineages) {
+                state.character.lineageId = lin;
+                dungeonEngine._render();
+            }
+            out.push('PASS: All 4 lineages tested dynamically in DungeonEngine rendering loop');
+
+            res.innerHTML = '<h1>E2E_TESTS_SUCCESS</h1><ul>' + out.map(o => '<li>' + o + '</li>').join('') + '</ul>';
+        } catch (err) {
+            res.innerHTML = '<h1>E2E_TESTS_ERROR</h1><pre>' + (err.stack || err.message) + '</pre>';
+        }
+    </script>
+</body>
+</html>

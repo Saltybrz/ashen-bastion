@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Verify Dungeon Roguelike Zoom & Immersion</title>
+</head>
+<body>
+    <div id="status">Testing...</div>
+    <canvas id="dungeon-canvas" width="1280" height="720"></canvas>
+
+    <script src="../js/core/constants.js"></script>
+    <script src="../js/core/utils.js"></script>
+    <script src="../js/models/Item.js"></script>
+    <script src="../js/models/LootTable.js"></script>
+    <script src="../js/models/SkillTree.js"></script>
+    <script src="../js/models/PlayerProgression.js"></script>
+    <script src="../js/models/Character.js"></script>
+    <script src="../js/systems/StateManager.js"></script>
+    <script src="../js/systems/CombatController.js"></script>
+    <script src="../js/render/AssetLoader.js"></script>
+    <script src="../js/render/EntityRenderer.js"></script>
+    <script src="../js/systems/DungeonEngine.js"></script>
+
+    <script>
+        const results = [];
+        try {
+            const state = new StateManager();
+            state.character = new Character(ClassType.BARBARIAN, BloodlineType.CHILDREN_OF_PYRE);
+            state.dungeonKeys = 5;
+
+            const engine = new DungeonEngine(state);
+            results.push('DungeonEngine constructed successfully');
+            results.push('Default zoom: ' + engine.zoom);
+            results.push('Default targetZoom: ' + engine.targetZoom);
+            results.push('Ambient motes count: ' + engine.ambientMotes.length);
+            results.push('Braziers count: ' + engine.braziers.length);
+
+            const canvas = document.getElementById('dungeon-canvas');
+            const entered = engine.enter(canvas);
+            results.push('Entered dungeon: ' + entered);
+            results.push('Camera position: (' + engine.camera.x.toFixed(1) + ', ' + engine.camera.y.toFixed(1) + ')');
+
+            // Simulate 10 frames
+            for (let i = 0; i < 10; i++) {
+                engine._update(0.016);
+            }
+            results.push('Simulated 10 update frames without errors');
+
+            // Render 1 frame
+            engine._render();
+            results.push('Rendered frame successfully');
+
+            // Test zoom toggle
+            engine._onKeyDown({ key: 'z' });
+            results.push('Key Z toggled targetZoom to: ' + engine.targetZoom);
+            engine._onKeyDown({ key: 'z' });
+            results.push('Key Z toggled back to: ' + engine.targetZoom);
+
+            // Test wheel zoom
+            engine._onWheel({ deltaY: -100, preventDefault: () => {} });
+            results.push('Wheel zoom in targetZoom: ' + engine.targetZoom);
+
+            document.getElementById('status').innerHTML = '<h1>ALL TESTS PASSED</h1><pre>' + results.join('\n') + '</pre>';
+            console.log('SUCCESS:', results);
+        } catch (err) {
+            document.getElementById('status').innerHTML = '<h1>TEST FAILED</h1><pre>' + err.stack + '</pre>';
+            console.error('FAILURE:', err);
+        }
+    </script>
+</body>
+</html>

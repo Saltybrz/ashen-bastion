@@ -1,0 +1,91 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <meta charset="UTF-8">
+    <title>Visual Screenshot Test - Roguelike Dungeon</title>
+    <style>
+        body { margin: 0; background: #000; overflow: hidden; }
+        canvas { display: block; width: 1920px; height: 1080px; }
+    </style>
+</head>
+<body>
+    <canvas id="dungeon-canvas" width="1920" height="1080"></canvas>
+
+    <script src="../js/core/constants.js"></script>
+    <script src="../js/core/utils.js"></script>
+    <script src="../js/models/Item.js"></script>
+    <script src="../js/models/LootTable.js"></script>
+    <script src="../js/models/SkillTree.js"></script>
+    <script src="../js/models/PlayerProgression.js"></script>
+    <script src="../js/models/Character.js"></script>
+    <script src="../js/systems/StateManager.js"></script>
+    <script src="../js/systems/CombatController.js"></script>
+    <script src="../js/render/AssetLoader.js"></script>
+    <script src="../js/render/EntityRenderer.js"></script>
+    <script src="../js/systems/DungeonEngine.js"></script>
+
+    <script>
+        async function run() {
+            try {
+                await AssetLoader.loadAll();
+            } catch (e) {
+                console.warn('AssetLoader error:', e);
+            }
+
+            const state = new StateManager();
+            state.character = new Character(ClassType.BARBARIAN, BloodlineType.CHILDREN_OF_PYRE);
+            state.character.hp = 85;
+            state.character.maxHp = 120;
+            state.character.resource = 45;
+            state.character.maxResource = 100;
+            state.dungeonKeys = 5;
+
+            const canvas = document.getElementById('dungeon-canvas');
+            const engine = new DungeonEngine(state);
+            engine.mapImage.src = '../assets/maps/dungeon_level_1.jpg';
+
+            // Wait for map image to be fully loaded
+            if (!engine.mapImage.complete) {
+                await new Promise(resolve => {
+                    engine.mapImage.onload = resolve;
+                    engine.mapImage.onerror = resolve;
+                });
+            }
+
+            engine.enter(canvas);
+
+            // Move player into corridor near braziers and enemies
+            engine.player.x = 1376;
+            engine.player.y = 1220;
+            engine.camera.x = 1376;
+            engine.camera.y = 1220;
+
+            // Spawn blood decals
+            engine.bloodDecals.push({
+                x: 1390, y: 1240,
+                radius: 28, color: '#4a0e14', alpha: 0.85,
+                splats: [{ dx: 12, dy: -8, r: 6 }, { dx: -15, dy: 10, r: 7 }, { dx: 8, dy: 16, r: 5 }]
+            });
+            engine.bloodDecals.push({
+                x: 1350, y: 1190,
+                radius: 22, color: '#3a080d', alpha: 0.8,
+                splats: [{ dx: -10, dy: -12, r: 4 }, { dx: 14, dy: 6, r: 5 }]
+            });
+
+            // Run a few updates
+            for (let i = 0; i < 15; i++) {
+                engine._update(0.016);
+            }
+
+            // Continuous animation render loop so screenshot captures a rendered frame
+            function frame() {
+                engine._update(0.016);
+                engine._render();
+                requestAnimationFrame(frame);
+            }
+            frame();
+        }
+        run();
+    </script>
+</body>
+</html>

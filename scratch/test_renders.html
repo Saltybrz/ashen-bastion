@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Visual Renders</title>
+</head>
+<body>
+    <div id="results">Running tests...</div>
+    <canvas id="test-canvas" width="200" height="200"></canvas>
+
+    <script src="../js/models/Item.js"></script>
+    <script src="../js/render/PaperdollSystem.js"></script>
+    <script src="../js/render/EnemyVisualRenderer.js"></script>
+
+    <script>
+        const res = document.getElementById('results');
+        const out = [];
+
+        try {
+            if (typeof window.PaperdollSystem === 'undefined') {
+                out.push('FAIL: PaperdollSystem is undefined');
+            } else {
+                out.push('PASS: PaperdollSystem loaded');
+            }
+
+            if (typeof window.EnemyVisualRenderer === 'undefined') {
+                out.push('FAIL: EnemyVisualRenderer is undefined');
+            } else {
+                out.push('PASS: EnemyVisualRenderer loaded');
+            }
+
+            // Test Paperdoll render
+            const canvas = document.getElementById('test-canvas');
+            const ctx = canvas.getContext('2d');
+
+            const dummyPlayer = {
+                x: 100, y: 100,
+                facing: { x: 0, y: 1 },
+                vx: 0, vy: 0,
+                iFrames: 0,
+                isMoving: false,
+                isDashing: false,
+            };
+
+            const dummyChar = {
+                lineageId: 'ashen_born',
+                classId: 'ashen_warmaster',
+                name: 'Teste Guerreiro',
+            };
+
+            PaperdollSystem.drawCharacter(ctx, dummyPlayer, dummyChar, 0.016);
+            out.push('PASS: PaperdollSystem.drawCharacter rendered without exception');
+
+            // Test all 4 lineages and classes
+            const lineages = ['children_of_pyre', 'decaying_nobility', 'void_touched', 'flayed_automaton'];
+            const classes = ['ashen_warmaster', 'penitent_stalker', 'pyre_hierophant', 'void_heretic'];
+
+            for (const lin of lineages) {
+                for (const cls of classes) {
+                    PaperdollSystem.drawCharacter(ctx, dummyPlayer, { lineageId: lin, classId: cls }, 0.016);
+                }
+            }
+            out.push('PASS: All 4 lineages x 4 classes Paperdoll combinations tested');
+
+            // Test EnemyVisualRenderer
+            const dummyEnemy = {
+                x: 100, y: 100,
+                vx: 0, vy: 0,
+                facing: { x: 1, y: 0 },
+                hp: 100, maxHp: 100,
+                radius: 16,
+                archetype: 'crawler',
+                familyId: 'void_spawn',
+                variantTier: 'elite',
+                state: 'STATE_CHASE',
+            };
+
+            EnemyVisualRenderer.drawEnemy(ctx, dummyEnemy, 0.016);
+            out.push('PASS: EnemyVisualRenderer.drawEnemy (Void Spawn Elite) rendered without exception');
+
+            // Test all 4 families x 5 tiers
+            const families = ['the_flayed', 'ashen_coven', 'void_spawn', 'blighted_brood'];
+            const tiers = ['common', 'veteran', 'elite', 'champion'];
+
+            for (const fam of families) {
+                for (const tr of tiers) {
+                    EnemyVisualRenderer.drawEnemy(ctx, {
+                        ...dummyEnemy,
+                        familyId: fam,
+                        variantTier: tr,
+                    }, 0.016);
+                }
+            }
+            out.push('PASS: All 4 enemy families x 4 tiers rendered without exception');
+
+            // Test 3 Bosses
+            const bosses = ['iron_executioner', 'blind_weft_matriarch', 'shattered_gazer'];
+            for (const b of bosses) {
+                EnemyVisualRenderer.drawEnemy(ctx, {
+                    ...dummyEnemy,
+                    isBoss: true,
+                    bossType: b,
+                    variantTier: 'boss',
+                    phase: 1,
+                }, 0.016);
+                EnemyVisualRenderer.drawEnemy(ctx, {
+                    ...dummyEnemy,
+                    isBoss: true,
+                    bossType: b,
+                    variantTier: 'boss',
+                    phase: 2,
+                }, 0.016);
+            }
+            out.push('PASS: All 3 bosses (Phase 1 & Phase 2) rendered without exception');
+
+            res.innerHTML = '<h1>TEST_RESULTS_SUCCESS</h1><ul>' + out.map(o => '<li>' + o + '</li>').join('') + '</ul>';
+        } catch (err) {
+            res.innerHTML = '<h1>TEST_RESULTS_ERROR</h1><pre>' + err.stack + '</pre>';
+        }
+    </script>
+</body>
+</html>

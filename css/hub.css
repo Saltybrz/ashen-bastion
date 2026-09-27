@@ -1,0 +1,1509 @@
+/* ==========================================================================
+   HUB / CAMP — DARK FANTASY ARPG GATHERING & WORKERS
+   Style: Ancient Rune Stones, Dark Forge & Iron Sarcophagi
+   ========================================================================== */
+
+/* ---------- Hub Principal: Layout Integrado (Pátio + Extração) ---------- */
+#tab-hub {
+    width: 100%;
+    min-height: 100%;
+    padding: 0 0 50px 0 !important;
+    margin: 0 !important;
+    display: none;
+    flex-direction: column;
+    align-items: center;
+    position: relative;
+    background: radial-gradient(circle at 50% 25%, rgba(18, 14, 22, 0.85) 0%, #080709 100%);
+}
+
+#tab-hub.active {
+    display: flex !important;
+}
+
+/* ---------- Subnav de Visualização do Acampamento ---------- */
+.hub-subnav {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 16px;
+    background: rgba(12, 10, 14, 0.96);
+    border-bottom: 1px solid rgba(197, 160, 89, 0.35);
+    width: 100%;
+    z-index: 20;
+    flex-shrink: 0;
+    box-shadow: 0 4px 14px rgba(0, 0, 0, 0.85);
+}
+
+.hub-subnav-btn {
+    background: linear-gradient(180deg, #241f22 0%, #121013 100%);
+    border: 1px solid #4a3e35;
+    outline: 1px solid #0d0b0e;
+    outline-offset: -2px;
+    color: #b8a994;
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    padding: 7px 16px;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.18s ease;
+    box-shadow: inset 0 0 6px #000;
+}
+
+.hub-subnav-btn:hover {
+    border-color: #c5a059;
+    color: #f7e6c4;
+    background: linear-gradient(180deg, #322b28 0%, #1a1518 100%);
+    box-shadow: inset 0 0 8px rgba(197, 160, 89, 0.2), 0 0 8px rgba(197, 160, 89, 0.25);
+    transform: translateY(-1px);
+}
+
+.hub-subnav-btn.active {
+    border-color: #c5a059;
+    color: #fceecb;
+    background: linear-gradient(180deg, #3d3023 0%, #1f1712 100%);
+    box-shadow: inset 0 0 10px rgba(197, 160, 89, 0.35), 0 0 12px rgba(197, 160, 89, 0.3);
+}
+
+/* ---------- O Pátio da Vila (Walkable 2D Courtyard) ---------- */
+.courtyard-wrapper {
+    width: 100%;
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 14px 16px 20px 16px;
+    flex-shrink: 0;
+}
+
+.courtyard-canvas-container {
+    position: relative;
+    width: 100%;
+    max-width: 1240px;
+    aspect-ratio: 1376 / 768;
+    max-height: calc(100vh - 195px);
+    background: #0d0b0f;
+    border: 2px solid #5a4625;
+    outline: 1px solid #141116;
+    outline-offset: -3px;
+    border-radius: 2px;
+    box-shadow: 0 0 35px rgba(0, 0, 0, 0.95), inset 0 0 20px rgba(0, 0, 0, 0.85);
+    overflow: hidden;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+#hub-canvas,
+#hub-courtyard-canvas {
+    width: 100%;
+    height: 100%;
+    display: block;
+    object-fit: contain;
+    image-rendering: auto;
+}
+
+/* ---------- Painel de Gestão e Recursos (Gathering, Workers, Upgrades) ---------- */
+.hub-management-panel {
+    width: 100%;
+    max-width: 1240px;
+    padding: 10px 16px 40px 16px;
+    margin: 0 auto;
+}
+
+.section-header-bar {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: var(--space-md);
+}
+
+.section-subtitle {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    letter-spacing: 0.4px;
+}
+
+/* Regras de Visibilidade por ViewMode */
+#tab-hub.view-courtyard .courtyard-wrapper { display: flex; }
+#tab-hub.view-courtyard .hub-management-panel { display: none; }
+
+#tab-hub.view-gathering .courtyard-wrapper { display: none; }
+#tab-hub.view-gathering .hub-management-panel { display: block; }
+#tab-hub.view-gathering .workers-section,
+#tab-hub.view-gathering .upgrades-section { display: none !important; }
+#tab-hub.view-gathering .gathering-section { display: block !important; }
+
+#tab-hub.view-workers .courtyard-wrapper { display: none; }
+#tab-hub.view-workers .hub-management-panel { display: block; }
+#tab-hub.view-workers .gathering-section { display: none !important; }
+#tab-hub.view-workers .workers-section,
+#tab-hub.view-workers .upgrades-section { display: block !important; }
+
+#tab-hub.view-split .courtyard-wrapper { display: flex; }
+#tab-hub.view-split .hub-management-panel { display: block; }
+#tab-hub.view-split .gathering-section,
+#tab-hub.view-split .workers-section,
+#tab-hub.view-split .upgrades-section { display: block !important; }
+
+/* ==========================================================================
+   WIDGET FLUTUANTE DE MINERAÇÃO (Canto Inferior Esquerdo)
+   ========================================================================== */
+.floating-gathering-widget {
+    position: fixed;
+    bottom: 20px;
+    left: 20px;
+    z-index: 25;
+    background: rgba(14, 12, 16, 0.92);
+    backdrop-filter: blur(8px);
+    -webkit-backdrop-filter: blur(8px);
+    border: 1px solid #4a3b22;
+    outline: 1px solid #141210;
+    outline-offset: -2px;
+    border-radius: 6px;
+    padding: 8px 12px;
+    box-shadow: inset 0 0 16px rgba(0, 0, 0, 0.9), 0 8px 24px rgba(0, 0, 0, 0.95);
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    min-width: 250px;
+}
+
+.floating-gathering-widget::before,
+.floating-gathering-widget::after {
+    content: '❖';
+    position: absolute;
+    font-size: 8px;
+    color: #96783d;
+    pointer-events: none;
+}
+.floating-gathering-widget::before { top: 3px; left: 5px; }
+.floating-gathering-widget::after  { bottom: 3px; right: 5px; }
+
+.widget-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid rgba(150, 120, 61, 0.25);
+    padding-bottom: 3px;
+}
+
+.widget-title {
+    font-family: var(--font-display);
+    font-size: 0.74rem;
+    font-weight: 700;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    color: #c5a059;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.widget-btn-expand {
+    background: transparent;
+    border: 1px solid rgba(197, 160, 89, 0.4);
+    color: #c5a059;
+    font-family: var(--font-display);
+    font-size: 0.68rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+    padding: 2px 7px;
+    border-radius: 2px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.widget-btn-expand:hover {
+    background: rgba(197, 160, 89, 0.2);
+    border-color: #f7e6c4;
+    color: #fceecb;
+}
+
+.widget-nodes-row {
+    display: flex;
+    gap: 8px;
+}
+
+.widget-node {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.widget-btn-gather {
+    background: linear-gradient(180deg, #221e21 0%, #110f13 100%);
+    border: 1px solid #5a4625;
+    outline: 1px solid #141210;
+    outline-offset: -2px;
+    border-radius: 4px;
+    padding: 6px 4px;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 2px;
+    transition: all 0.15s ease;
+    box-shadow: inset 0 0 6px #000, 0 2px 6px rgba(0, 0, 0, 0.7);
+}
+
+.widget-btn-gather:hover {
+    border-color: #96783d;
+    background: linear-gradient(180deg, #302824 0%, #1a1618 100%);
+    box-shadow: inset 0 0 8px rgba(197, 160, 89, 0.25), 0 0 8px rgba(197, 160, 89, 0.3);
+    transform: translateY(-1px);
+}
+
+.widget-btn-gather:active {
+    transform: translateY(1px);
+    box-shadow: inset 0 2px 6px #000;
+}
+
+.widget-rune {
+    font-family: 'Cinzel', serif;
+    font-size: 0.95rem;
+    color: #c5a059;
+}
+
+.widget-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    font-weight: 700;
+    color: #ded7cd;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* Barras de progresso filiformes (3px) em âmbar escuro */
+.widget-bar-track {
+    width: 100%;
+    height: 3px;
+    background: #1a140d;
+    border-radius: 1px;
+    overflow: hidden;
+    position: relative;
+    box-shadow: inset 0 0 2px #000;
+}
+
+.widget-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #784812 0%, #c5a059 70%, #d97706 100%);
+    box-shadow: 0 0 4px rgba(217, 119, 6, 0.8);
+    transition: width 0.1s linear;
+}
+
+.courtyard-prompt {
+    position: absolute;
+    bottom: 35px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(14, 12, 16, 0.94);
+    border: 1px solid var(--border-gold);
+    outline: 1px solid #000;
+    padding: 8px 22px;
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    box-shadow: 0 0 25px rgba(0,0,0,0.95), 0 0 14px rgba(197, 160, 89, 0.45);
+    pointer-events: none;
+    animation: pulsePrompt 1.8s infinite ease-in-out;
+    z-index: 20;
+}
+
+@keyframes pulsePrompt {
+    0%, 100% { transform: translateX(-50%) scale(1); box-shadow: 0 0 15px rgba(197, 160, 89, 0.3); }
+    50% { transform: translateX(-50%) scale(1.03); box-shadow: 0 0 25px rgba(197, 160, 89, 0.65); }
+}
+
+.prompt-key {
+    background: #c5a059;
+    color: #0b090c;
+    font-family: var(--font-display);
+    font-weight: 900;
+    font-size: 0.9rem;
+    padding: 3px 8px;
+    border-radius: 2px;
+    box-shadow: 0 0 6px rgba(197, 160, 89, 0.6);
+}
+
+.prompt-text {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #f7e6c4;
+    letter-spacing: 1px;
+    text-shadow: 0 1px 3px #000;
+}
+
+.courtyard-legend {
+    position: absolute;
+    top: 10px;
+    left: 14px;
+    background: rgba(10, 8, 12, 0.85);
+    border: 1px solid rgba(197, 160, 89, 0.35);
+    padding: 5px 12px;
+    font-size: 0.74rem;
+    font-family: var(--font-display);
+    color: #b3a795;
+    letter-spacing: 0.6px;
+    pointer-events: none;
+    box-shadow: 0 4px 10px rgba(0,0,0,0.8);
+    z-index: 10;
+}
+
+.hub-layout {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    grid-template-rows: auto auto;
+    gap: var(--space-lg);
+    max-width: 1200px;
+    margin: 0 auto;
+}
+
+.gathering-section {
+    grid-column: 1 / -1;
+}
+
+/* ---------- Gathering Nodes (Runic Stone Obelisks) ---------- */
+.gathering-nodes {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(290px, 1fr));
+    gap: var(--space-md);
+}
+
+.node-card {
+    background: #131115;
+    border: 2px solid #4a3e35;
+    outline: 1px solid #0d0b0e;
+    outline-offset: -3px;
+    border-radius: 0;
+    padding: var(--space-md);
+    transition: all 0.2s ease;
+    position: relative;
+    overflow: hidden;
+    box-shadow: inset 0 0 14px #000, 0 6px 16px rgba(0, 0, 0, 0.85);
+}
+
+.node-card::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border-brass), transparent);
+    opacity: 0.8;
+}
+
+.node-card:hover {
+    border-color: var(--border-brass);
+    box-shadow: inset 0 0 12px rgba(197, 160, 89, 0.15), 0 8px 24px rgba(0, 0, 0, 0.95);
+    transform: translateY(-2px);
+}
+
+.node-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+    border-bottom: 1px solid #231f24;
+    padding-bottom: 6px;
+}
+
+.node-title-group {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.node-icon {
+    font-size: 1.8rem;
+    filter: drop-shadow(0 3px 6px #000);
+}
+
+.node-name {
+    font-family: var(--font-display);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #dfcaa2;
+    letter-spacing: 0.5px;
+    text-shadow: 0 1px 3px #000;
+}
+
+.node-level {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: var(--border-gold);
+    background: #1c1813;
+    padding: 2px 8px;
+    border: 1px solid var(--border-brass-dim);
+    border-radius: 0;
+    text-shadow: 0 1px 2px #000;
+    box-shadow: inset 0 0 4px #000;
+}
+
+/* ---------- Node Progress Bar (Carved Rune Stone + Molten Gold / Dark Blood) ---------- */
+.node-progress-wrapper {
+    margin-bottom: var(--space-md);
+}
+
+.node-progress-bar {
+    height: 30px;
+    background: #09080b;
+    border: 2px solid #3d352e;
+    outline: 1px solid #000;
+    border-radius: 0;
+    overflow: hidden;
+    position: relative;
+    cursor: pointer;
+    box-shadow: inset 0 0 10px #000;
+    transition: all 0.15s ease;
+}
+
+.node-progress-bar:hover {
+    border-color: var(--border-brass);
+    box-shadow: inset 0 0 12px rgba(197, 160, 89, 0.25), 0 0 8px rgba(197, 160, 89, 0.15);
+}
+
+.node-progress-bar:active {
+    transform: scale(0.99);
+}
+
+/* Molten Gold / Dark Blood Runic Fluid */
+.node-progress-fill {
+    height: 100%;
+    border-radius: 0;
+    transition: width 0.1s linear;
+    position: relative;
+    background: linear-gradient(180deg, #b45309 0%, #854d0e 50%, #451a03 100%);
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.2), 0 0 8px rgba(217, 119, 6, 0.3);
+}
+
+.node-card:nth-child(2) .node-progress-fill {
+    background: linear-gradient(180deg, #4b5563 0%, #374151 50%, #1f2937 100%);
+}
+
+.node-card:nth-child(3) .node-progress-fill {
+    background: linear-gradient(180deg, #ca8a04 0%, #92400e 50%, #451a03 100%);
+}
+
+.node-progress-fill::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(180deg, rgba(255,255,255,0.15) 0%, transparent 60%);
+}
+
+/* Shimmer of Embers */
+.node-progress-fill.active::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: -100%;
+    width: 100%;
+    height: 100%;
+    background: linear-gradient(90deg, transparent, rgba(245, 230, 200, 0.2), transparent);
+    animation: emberSweep 1.8s infinite;
+}
+
+@keyframes emberSweep {
+    to { left: 100%; }
+}
+
+.node-progress-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-family: var(--font-display);
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #f3ece1;
+    letter-spacing: 0.5px;
+    text-shadow: 1px 1px 2px #000, 0 0 4px #000;
+    z-index: 1;
+    pointer-events: none;
+}
+
+/* Node Stats Row */
+.node-stats {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+    flex-wrap: wrap;
+    background: #0d0c0f;
+    padding: 6px var(--space-sm);
+    border: 1px solid #231f24;
+}
+
+.node-stat {
+    font-family: var(--font-body);
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    display: flex;
+    align-items: center;
+    gap: 5px;
+}
+
+.node-stat strong {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    color: #dfcaa2;
+    text-shadow: 1px 1px 0 #000, 0 0 6px rgba(0,0,0,0.8);
+}
+
+/* Node Actions */
+.node-actions {
+    display: flex;
+    gap: var(--space-sm);
+    align-items: center;
+}
+
+.btn-gather {
+    flex: 1;
+    padding: 8px var(--space-md);
+    background: linear-gradient(180deg, #382f27 0%, #1e1915 100%);
+    border: 2px solid #5a4625;
+    outline: 1px solid #1a1714;
+    outline-offset: -3px;
+    border-radius: 0;
+    color: #dfcaa2;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.85rem;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    transition: all 0.15s ease;
+    box-shadow: inset 0 1px 0 rgba(255,255,255,0.08), inset 0 0 8px #000, 0 3px 8px rgba(0,0,0,0.8);
+}
+
+.btn-gather:hover:not(:disabled) {
+    border-color: var(--border-gold);
+    background: linear-gradient(180deg, #483d33 0%, #29221d 100%);
+    box-shadow: inset 0 0 12px rgba(197, 160, 89, 0.4), 0 0 10px rgba(197, 160, 89, 0.2);
+    color: #ffffff;
+}
+
+.btn-gather:active:not(:disabled) {
+    transform: translateY(2px);
+    box-shadow: inset 0 2px 8px #000;
+}
+
+.btn-gather:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+    border-color: #332d29;
+}
+
+.btn-gather.gathering {
+    animation: gatherEmberPulse 1.2s ease-in-out infinite;
+    border-color: var(--accent-ember);
+}
+
+@keyframes gatherEmberPulse {
+    0%, 100% { box-shadow: inset 0 0 8px rgba(194, 75, 26, 0.4), 0 0 4px rgba(194, 75, 26, 0.2); }
+    50%      { box-shadow: inset 0 0 14px rgba(194, 75, 26, 0.7), 0 0 12px rgba(194, 75, 26, 0.5); }
+}
+
+.btn-upgrade {
+    padding: 8px 12px;
+    background: linear-gradient(180deg, #24201b 0%, #141210 100%);
+    border: 1px solid var(--border-brass-dim);
+    border-radius: 0;
+    color: var(--accent-gold);
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.5px;
+    transition: all 0.15s ease;
+    white-space: nowrap;
+    box-shadow: inset 0 0 6px #000;
+}
+
+.btn-upgrade:hover:not(:disabled) {
+    border-color: var(--border-gold);
+    background: linear-gradient(180deg, #322b24 0%, #1e1915 100%);
+    box-shadow: inset 0 0 8px rgba(197, 160, 89, 0.3);
+}
+
+.btn-upgrade:disabled {
+    opacity: 0.35;
+    cursor: not-allowed;
+    border-color: #26211d;
+}
+
+/* Automation Badge */
+.automation-badge {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    color: #79a8a3;
+    background: #0f1616;
+    padding: 2px 8px;
+    border: 1px solid #1e3332;
+    border-radius: 0;
+    box-shadow: inset 0 0 6px #000;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.automation-badge .pulse-dot {
+    width: 6px;
+    height: 6px;
+    background: #3b827e;
+    border-radius: 0;
+    animation: runicPulse 1.5s ease-in-out infinite;
+    box-shadow: 0 0 4px #3b827e;
+}
+
+@keyframes runicPulse {
+    0%, 100% { opacity: 1; transform: scale(1); }
+    50%      { opacity: 0.3; transform: scale(0.7); }
+}
+
+/* ---------- Workers Section (Thralls of the Bastion) ---------- */
+.workers-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.worker-card {
+    background: #131115;
+    border: 1px solid #3d352e;
+    outline: 1px solid #0a090c;
+    border-radius: 0;
+    padding: var(--space-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.15s ease;
+    box-shadow: inset 0 0 10px #000;
+}
+
+.worker-card:hover {
+    border-color: var(--border-brass);
+    background: #17151a;
+}
+
+.worker-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.worker-icon {
+    font-size: 1.6rem;
+    filter: drop-shadow(0 2px 4px #000);
+}
+
+.worker-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.worker-name {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dfcaa2;
+    letter-spacing: 0.5px;
+}
+
+.worker-desc {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+.worker-owned {
+    font-family: var(--font-display);
+    font-size: 0.72rem;
+    color: #79a8a3;
+    font-weight: 600;
+}
+
+.worker-cost {
+    text-align: right;
+}
+
+.worker-cost-label {
+    font-family: var(--font-display);
+    font-size: 0.7rem;
+    color: var(--text-muted);
+    text-transform: uppercase;
+}
+
+.worker-cost-value {
+    font-family: var(--font-body);
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: #dfcaa2;
+    text-shadow: 1px 1px 0 #000;
+}
+
+/* ---------- Camp Upgrades ---------- */
+.upgrades-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.upgrade-card {
+    background: #131115;
+    border: 1px solid #3d352e;
+    outline: 1px solid #0a090c;
+    border-radius: 0;
+    padding: var(--space-md);
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    transition: all 0.15s ease;
+    box-shadow: inset 0 0 10px #000;
+}
+
+.upgrade-card:hover {
+    border-color: var(--border-brass);
+    background: #17151a;
+}
+
+.upgrade-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.upgrade-icon { font-size: 1.4rem; filter: drop-shadow(0 2px 4px #000); }
+
+.upgrade-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.upgrade-name {
+    font-family: var(--font-display);
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dfcaa2;
+    letter-spacing: 0.5px;
+}
+
+.upgrade-desc {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+}
+
+/* ---------- Ascension Panel (Sacrifice of Ashes) ---------- */
+.ascension-panel {
+    background: #151010;
+    border: 2px solid #5a201b;
+    outline: 1px solid #140807;
+    outline-offset: -4px;
+    border-radius: 0;
+    padding: var(--space-xl);
+    text-align: center;
+    box-shadow: inset 0 0 24px rgba(139, 30, 30, 0.25), 0 8px 24px rgba(0, 0, 0, 0.9);
+}
+
+.ascension-title {
+    font-family: var(--font-title);
+    font-size: 1.4rem;
+    font-weight: 700;
+    color: #e06038;
+    margin-bottom: var(--space-xs);
+    letter-spacing: 2px;
+    text-transform: uppercase;
+    text-shadow: 0 2px 8px rgba(224, 96, 56, 0.4);
+}
+
+.ascension-desc {
+    font-family: var(--font-body);
+    font-size: 0.98rem;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-md);
+    line-height: 1.5;
+}
+
+.ascension-reward {
+    font-family: var(--font-display);
+    font-size: 1rem;
+    color: var(--accent-gold);
+    font-weight: 700;
+    margin-bottom: var(--space-md);
+    text-shadow: 0 1px 4px #000;
+}
+
+@media (max-width: 900px) {
+    .hub-layout {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* ==========================================================================
+   CAMP SERVICES — DARK FANTASY NÚCLEO DE SERVIÇOS DO ACAMPAMENTO
+   Style: Gothic Anvil, Dark Alchemical Cauldron, Ashen Bazaar & Royal Decrees
+   ========================================================================== */
+
+.services-two-col {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-lg);
+    max-width: 1280px;
+    margin: 0 auto;
+}
+
+@media (max-width: 960px) {
+    .services-two-col {
+        grid-template-columns: 1fr;
+    }
+}
+
+.service-block {
+    background: #110f13;
+    border: 2px solid #42362b;
+    outline: 1px solid #0d0b0e;
+    outline-offset: -3px;
+    padding: var(--space-lg);
+    box-shadow: inset 0 0 20px #000, 0 8px 24px rgba(0, 0, 0, 0.9);
+    position: relative;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.service-block::before {
+    content: '';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: linear-gradient(90deg, transparent, var(--border-brass), transparent);
+    opacity: 0.85;
+}
+
+.service-block-header {
+    border-bottom: 1px solid #282226;
+    padding-bottom: var(--space-sm);
+}
+
+.service-subtitle {
+    font-family: var(--font-body);
+    font-size: 0.88rem;
+    color: var(--text-secondary);
+    margin-top: 4px;
+}
+
+/* ---------- Gothic Form Controls ---------- */
+.gothic-select {
+    width: 100%;
+    background: #18151a;
+    color: #e5d7bc;
+    border: 1px solid #5a493a;
+    padding: 8px 12px;
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    border-radius: 0;
+    box-shadow: inset 0 0 8px #000;
+    outline: none;
+    cursor: pointer;
+}
+
+.gothic-select:focus {
+    border-color: var(--border-gold);
+    box-shadow: inset 0 0 10px rgba(197, 160, 89, 0.3);
+}
+
+.gothic-select option {
+    background: #141216;
+    color: #e5d7bc;
+}
+
+/* ---------- Forge Section & Item Preview ---------- */
+.forge-item-picker {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+}
+
+.forge-empty-state {
+    text-align: center;
+    padding: var(--space-xl);
+    color: var(--text-muted);
+    border: 1px dashed #3a3028;
+    background: #0d0c0e;
+}
+
+.forge-card {
+    background: #171418;
+    border: 1px solid #4a3e35;
+    padding: var(--space-md);
+    box-shadow: inset 0 0 12px #000;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.forge-card-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid #2b242a;
+    padding-bottom: 6px;
+}
+
+.forge-item-name {
+    font-size: 1.05rem;
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.forge-item-level-tag {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: var(--border-gold);
+    font-weight: 700;
+}
+
+.forge-stat-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    padding: 3px 0;
+}
+
+.stat-next {
+    color: #72bf65;
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.stat-max {
+    color: var(--border-gold);
+    font-weight: 700;
+    margin-left: 6px;
+}
+
+.forge-upgrade-meta {
+    background: #110e12;
+    border: 1px solid #2f2524;
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    margin-top: 6px;
+}
+
+.meta-label {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: #a49182;
+    text-transform: uppercase;
+    letter-spacing: 0.5px;
+}
+
+.cost-badges {
+    display: flex;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.cost-badge {
+    background: #1d191c;
+    border: 1px solid #453830;
+    color: #dfcaa2;
+    font-size: 0.8rem;
+    font-family: var(--font-display);
+    padding: 3px 8px;
+    box-shadow: inset 0 0 4px #000;
+}
+
+.cost-met {
+    border-color: #4f683a;
+    color: #a9df8d;
+}
+
+.cost-unmet {
+    border-color: #682e2e;
+    color: #e07272;
+}
+
+.chance-tag {
+    display: inline-block;
+    padding: 2px 8px;
+    font-family: var(--font-display);
+    font-weight: 700;
+    font-size: 0.85rem;
+}
+
+.chance-high {
+    background: rgba(46, 125, 50, 0.2);
+    color: #81c784;
+    border: 1px solid #2e7d32;
+}
+
+.chance-mid {
+    background: rgba(230, 81, 0, 0.2);
+    color: #ffb74d;
+    border: 1px solid #e65100;
+}
+
+.chance-low {
+    background: rgba(183, 28, 28, 0.2);
+    color: #ef5350;
+    border: 1px solid #b71c1c;
+}
+
+.forge-safety-note {
+    font-size: 0.8rem;
+    margin: 0;
+}
+
+.forge-max-box {
+    background: #1c1813;
+    border: 1px solid var(--border-gold);
+    color: var(--border-gold);
+    text-align: center;
+    padding: var(--space-md);
+    font-family: var(--font-display);
+    font-size: 0.92rem;
+}
+
+/* ---------- Salvage Section ---------- */
+.salvage-section {
+    border-top: 1px solid #282226;
+    padding-top: var(--space-md);
+    margin-top: var(--space-sm);
+}
+
+.salvage-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: var(--space-sm);
+}
+
+.salvage-title {
+    font-size: 0.95rem;
+    color: #dfcaa2;
+    margin: 0;
+}
+
+.salvage-list {
+    max-height: 200px;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    padding-right: 4px;
+}
+
+.salvage-row {
+    background: #141115;
+    border: 1px solid #332a2f;
+    padding: 6px 10px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+}
+
+.salvage-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.salvage-name {
+    font-size: 0.85rem;
+    color: #dfcaa2;
+}
+
+.salvage-returns {
+    font-size: 0.76rem;
+    color: var(--text-muted);
+}
+
+/* ---------- Alchemy Section & Potion Belt Config ---------- */
+.potion-belt-config {
+    background: #151216;
+    border: 1px solid #3e333b;
+    padding: var(--space-sm) var(--space-md);
+    margin-bottom: var(--space-sm);
+}
+
+.belt-config-title {
+    font-size: 0.85rem;
+    color: var(--border-brass);
+    margin-bottom: 8px;
+}
+
+.belt-slots-config-grid {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-sm);
+}
+
+.belt-config-slot {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+.slot-tag {
+    font-size: 0.72rem;
+    color: var(--border-gold);
+    font-weight: 700;
+}
+
+.alchemy-recipes-container {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.recipes-title {
+    font-size: 0.95rem;
+    color: #dfcaa2;
+    margin: 0;
+}
+
+.alchemy-recipes-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.alchemy-recipe-card {
+    background: #151217;
+    border: 1px solid #3c3033;
+    padding: var(--space-sm) var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: inset 0 0 8px #000;
+}
+
+.recipe-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.recipe-icon {
+    font-size: 1.5rem;
+    color: var(--border-gold);
+}
+
+.recipe-title-group {
+    flex: 1;
+}
+
+.recipe-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dfcaa2;
+    margin: 0;
+}
+
+.recipe-effect {
+    font-size: 0.8rem;
+    color: #9c8e84;
+}
+
+.recipe-stock-badge {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: #dfcaa2;
+    background: #1f1a1d;
+    padding: 3px 8px;
+    border: 1px solid #4a3c3e;
+}
+
+.recipe-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    border-top: 1px solid #272023;
+    padding-top: 6px;
+}
+
+/* ---------- Market & Barter Section ---------- */
+.market-section {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+    margin-bottom: var(--space-md);
+}
+
+.market-section-title {
+    font-size: 0.95rem;
+    color: #dfcaa2;
+    margin: 0;
+}
+
+.merchant-header-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+}
+
+.market-barter-list,
+.market-provisions-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-sm);
+}
+
+.barter-card,
+.merchant-card {
+    background: #141115;
+    border: 1px solid #3d322b;
+    padding: var(--space-sm) var(--space-md);
+    box-shadow: inset 0 0 8px #000;
+}
+
+.barter-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+}
+
+.barter-flow {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    font-family: var(--font-display);
+    font-size: 0.88rem;
+    color: #dfcaa2;
+}
+
+.barter-arrow {
+    color: var(--border-gold);
+    font-weight: 700;
+}
+
+.barter-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.merchant-card {
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+}
+
+.merchant-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.merchant-icon {
+    font-size: 1.5rem;
+    color: var(--border-gold);
+}
+
+.merchant-title-group {
+    flex: 1;
+}
+
+.merchant-name {
+    font-size: 0.95rem;
+    font-weight: 700;
+    color: #dfcaa2;
+    margin: 0;
+}
+
+.merchant-desc {
+    font-size: 0.8rem;
+    color: #9c8e84;
+}
+
+.merchant-footer {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-top: 1px solid #282025;
+    padding-top: 6px;
+}
+
+.merchant-stock-info {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: #a49182;
+}
+
+/* ---------- Bounties (O Quadro de Editais) ---------- */
+.bounties-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-md);
+}
+
+.bounty-card {
+    background: #141115;
+    border: 2px solid #3c322b;
+    padding: var(--space-md);
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    box-shadow: inset 0 0 10px #000;
+    position: relative;
+    transition: all 0.2s ease;
+}
+
+.bounty-card:hover {
+    border-color: #5a4b3d;
+}
+
+.bounty-completed {
+    border-color: var(--border-gold) !important;
+    background: #1a1612 !important;
+    box-shadow: inset 0 0 16px rgba(197, 160, 89, 0.2), 0 0 12px rgba(197, 160, 89, 0.25) !important;
+}
+
+.bounty-claimed {
+    opacity: 0.75;
+    border-style: dashed;
+}
+
+.bounty-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.bounty-icon {
+    font-size: 1.6rem;
+    color: var(--border-gold);
+}
+
+.bounty-title-group {
+    flex: 1;
+}
+
+.bounty-type-tag {
+    font-family: var(--font-display);
+    font-size: 0.65rem;
+    color: var(--border-brass);
+    letter-spacing: 1px;
+    font-weight: 700;
+}
+
+.bounty-title {
+    font-size: 0.98rem;
+    font-weight: 700;
+    color: #e5d7bc;
+    margin: 0;
+}
+
+.bounty-desc {
+    font-size: 0.86rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+.bounty-progress-block {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+}
+
+.bounty-bar-wrapper {
+    flex: 1;
+    height: 12px;
+    background: #0d0b0d;
+    border: 1px solid #382c28;
+    overflow: hidden;
+}
+
+.bounty-bar-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #8b5321, #c5a059);
+    transition: width 0.3s ease;
+}
+
+.bounty-count {
+    font-family: var(--font-display);
+    font-size: 0.8rem;
+    color: #dfcaa2;
+    font-weight: 700;
+    min-width: 50px;
+    text-align: right;
+}
+
+.bounty-rewards {
+    display: flex;
+    align-items: center;
+    gap: var(--space-sm);
+    flex-wrap: wrap;
+    font-size: 0.8rem;
+    border-top: 1px solid #261f23;
+    padding-top: 6px;
+}
+
+.rewards-label {
+    font-family: var(--font-display);
+    color: #a49182;
+    font-size: 0.75rem;
+}
+
+.rewards-items {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+.bounty-actions {
+    display: flex;
+    justify-content: flex-end;
+    margin-top: 2px;
+}
+
+.bounty-cooldown-box {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+    gap: var(--space-sm);
+}
+
+.cooldown-badge {
+    font-family: var(--font-display);
+    font-size: 0.78rem;
+    color: #a49182;
+}
+
+.highlight-hope {
+    color: var(--border-gold);
+    font-weight: 700;
+    text-shadow: 0 0 12px rgba(197, 160, 89, 0.4);
+}
+
