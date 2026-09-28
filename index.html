@@ -418,6 +418,33 @@
 
                 <!-- Dungeon Tab -->
                 <section id="tab-dungeon" class="tab-panel">
+                    <!-- Seletor de Expedições (Tríade Definitiva de Mapas) -->
+                    <div class="expedition-selector-container">
+                        <div class="expedition-selector-title">
+                            <span class="rune-icon">⚔</span> DESTINO DA EXPEDIÇÃO DO BASTIÃO
+                        </div>
+                        <div class="expedition-cards-grid">
+                            <div class="expedition-card active" data-map-id="DUNGEON_RIFT">
+                                <div class="expedition-badge tier-1">MASMORRA 1</div>
+                                <div class="expedition-card-name">A Fenda Abissal</div>
+                                <div class="expedition-card-desc">Catacumbas subterrâneas tomadas por abominações e guardadas pelo Carrasco de Ferro Negro.</div>
+                                <div class="expedition-card-req">Requisito: Chave da Fenda</div>
+                            </div>
+                            <div class="expedition-card" data-map-id="DUNGEON_FORGES">
+                                <div class="expedition-badge tier-2">MASMORRA 2</div>
+                                <div class="expedition-card-name">As Forjas Mortas</div>
+                                <div class="expedition-card-desc">Fundição colossal abandonada. Tanques de escória ardente, autômatos pesados e o Colosso da Fornalha.</div>
+                                <div class="expedition-card-req">Requisito: Nível 15+ ou Carrasco Derrotado</div>
+                            </div>
+                            <div class="expedition-card" data-map-id="DUNGEON_VOID">
+                                <div class="expedition-badge tier-3">MASMORRA 3 (ENDGAME)</div>
+                                <div class="expedition-card-name">O Trono do Vazio</div>
+                                <div class="expedition-card-desc">Arena cósmica sobre o abismo infinito. Obeliscos rúnicos ancestrais e o confronto final com o Soberano do Vazio.</div>
+                                <div class="expedition-card-req">Requisito: Nível 35+ ou Forjas Superadas</div>
+                            </div>
+                        </div>
+                    </div>
+
                     <div class="dungeon-gate">
                         <div class="gate-visual">
                             <div class="gate-frame">
@@ -649,6 +676,8 @@
     <script src="js/render/PaperdollSystem.js"></script>
     <script src="js/render/EnemyVisualRenderer.js"></script>
     <script src="js/render/EntityRenderer.js"></script>
+    <script src="js/systems/MapManager.js"></script>
+    <script src="js/systems/SanctuaryManager.js"></script>
     <script src="js/systems/DungeonEngine.js"></script>
     <script src="js/systems/HubEngine.js"></script>
     <script src="js/ui/TitleScreenFX.js"></script>

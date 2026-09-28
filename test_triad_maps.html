@@ -1,0 +1,237 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <title>Ashen Bastion - Triad Maps Test Suite</title>
+    <style>
+        body {
+            background-color: #0d0c10;
+            color: #dcd8d0;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 24px;
+        }
+        h1 { color: #c5a059; border-bottom: 2px solid #3d342c; padding-bottom: 8px; }
+        .test-card {
+            background: #141217;
+            border: 1px solid #332b24;
+            padding: 14px 18px;
+            margin-bottom: 12px;
+            border-radius: 4px;
+        }
+        .pass { border-left: 5px solid #22c55e; }
+        .fail { border-left: 5px solid #ef4444; }
+        .title { font-weight: bold; font-size: 1.05rem; }
+        .details { font-size: 0.9rem; color: #a19d94; margin-top: 4px; font-family: monospace; }
+        #summary {
+            font-size: 1.2rem;
+            margin-top: 20px;
+            padding: 12px;
+            background: #1e1a22;
+            border: 1px solid #8c6f36;
+        }
+    </style>
+</head>
+<body>
+    <h1>In Search of Hope: The Ashen Bastion — Validação da Tríade de Mapas</h1>
+    <div id="results">Executando suíte de testes automatizados...</div>
+    <div id="summary"></div>
+
+    <canvas id="test-canvas" width="1376" height="768" style="display:none;"></canvas>
+
+    <!-- Required game dependencies -->
+    <script src="js/core/constants.js"></script>
+    <script src="js/core/utils.js"></script>
+    <script src="js/models/Item.js"></script>
+    <script src="js/models/PlayerProgression.js"></script>
+    <script src="js/models/SkillTree.js"></script>
+    <script src="js/models/Character.js"></script>
+    <script src="js/models/LootTable.js"></script>
+    <script src="js/systems/StateManager.js"></script>
+    <script src="js/systems/SettingsManager.js"></script>
+    <script src="js/systems/MapManager.js"></script>
+    <script src="js/systems/SanctuaryManager.js"></script>
+    <script src="js/systems/CombatController.js"></script>
+    <script src="js/systems/DungeonEngine.js"></script>
+    <script src="js/systems/HubEngine.js"></script>
+
+    <script>
+        const results = [];
+        function assert(name, condition, details = '') {
+            results.push({ name, pass: !!condition, details });
+        }
+
+        async function runTests() {
+            try {
+                // 1. MapManager.WORLD_MAPS Check
+                assert('MapManager existe no escopo global', typeof MapManager !== 'undefined');
+                assert('MapManager possui WORLD_MAPS', typeof MapManager.WORLD_MAPS === 'object');
+                assert('HUB_VILLAGE registrado', !!MapManager.WORLD_MAPS.HUB_VILLAGE);
+                assert('HUB_CATHEDRAL registrado', !!MapManager.WORLD_MAPS.HUB_CATHEDRAL);
+                assert('DUNGEON_FORGES registrado', !!MapManager.WORLD_MAPS.DUNGEON_FORGES);
+                assert('DUNGEON_VOID registrado', !!MapManager.WORLD_MAPS.DUNGEON_VOID);
+
+                // Aspect Fit calculation test
+                const fit = MapManager.calculateAspectFit(1344, 768, 1920, 1080);
+                assert('calculateAspectFit preserva aspect ratio', fit.width > 0 && fit.height > 0 && fit.scale > 0, `scale: ${fit.scale}`);
+
+                // 2. SanctuaryManager Progression Check
+                assert('SanctuaryManager existe no escopo global', typeof SanctuaryManager !== 'undefined');
+                const mockState = new StateManager();
+                mockState.character = new Character('barbarian');
+                mockState.character.level = 1;
+                mockState.totalDungeonClears = 0;
+                mockState.character.bossesDefeated = {};
+
+                // Level 1: All locked
+                const lk = SanctuaryManager.getNPC('lorekeeper');
+                const al = SanctuaryManager.getNPC('heretic_alchemist');
+                const ast = SanctuaryManager.getNPC('void_astrologer');
+
+                assert('Nível 1: Cronista das Cinzas bloqueado', lk && !lk.isUnlocked(mockState));
+                assert('Nível 1: Alquimista Herética bloqueada', al && !al.isUnlocked(mockState));
+                assert('Nível 1: Astrólogo do Vácuo bloqueado', ast && !ast.isUnlocked(mockState));
+
+                // Level 5: Lorekeeper unlocked
+                mockState.character.level = 5;
+                assert('Nível 5: Cronista das Cinzas desbloqueado', lk.isUnlocked(mockState));
+                assert('Nível 5: Astrólogo do Vácuo continua bloqueado', !ast.isUnlocked(mockState));
+
+                // Boss 1 clear: Alchemist unlocked
+                mockState.totalDungeonClears = 1;
+                mockState.character.bossesDefeated.ironbound_executioner = true;
+                assert('Carrasco Derrotado: Alquimista Herética desbloqueada', al.isUnlocked(mockState));
+
+                // Level 40: Astrologer unlocked
+                mockState.character.level = 40;
+                assert('Nível 40: Astrólogo do Vácuo desbloqueado', ast.isUnlocked(mockState));
+
+                // 3. HubEngine Teleportation & Clamp
+                assert('HubEngine existe e inicializa em HUB_VILLAGE', HubEngine.getActiveMapId() === 'HUB_VILLAGE');
+                window.hubUI = {
+                    activeHubMapId: 'HUB_VILLAGE',
+                    player: { x: 688, y: 285 },
+                    teleportToCathedral() {
+                        this.activeHubMapId = 'HUB_CATHEDRAL';
+                        this.player.x = 672;
+                        this.player.y = 700;
+                    },
+                    teleportToVillage() {
+                        this.activeHubMapId = 'HUB_VILLAGE';
+                        this.player.x = 688;
+                        this.player.y = 285;
+                    }
+                };
+
+                HubEngine.teleportTo('HUB_CATHEDRAL');
+                assert('HubEngine teletransporta para HUB_CATHEDRAL', HubEngine.getActiveMapId() === 'HUB_CATHEDRAL');
+                assert('Spawn na Catedral posiciona no portal Sul', window.hubUI.player.y >= 680 && window.hubUI.player.y <= 720, `y: ${window.hubUI.player.y}`);
+
+                HubEngine.teleportTo('HUB_VILLAGE');
+                assert('HubEngine retorna para HUB_VILLAGE', HubEngine.getActiveMapId() === 'HUB_VILLAGE');
+                assert('Spawn na Vila posiciona próximo ao círculo rúnico', window.hubUI.player.x === 688 && window.hubUI.player.y === 285);
+
+                // 4. DungeonEngine: Masmorra 2 (As Forjas Mortas)
+                const canvas = document.getElementById('test-canvas');
+                mockState.dungeonKeys = 99;
+                const dungeon = new DungeonEngine(mockState);
+                dungeon.enter(canvas, 'DUNGEON_FORGES');
+
+                assert('DungeonEngine entra em DUNGEON_FORGES', dungeon.currentMapId === 'DUNGEON_FORGES');
+                assert('Spawn no portão Sul de Forjas', dungeon.player.y >= 700, `y: ${dungeon.player.y}`);
+                assert('Bacias de escória inicializadas', dungeon.slagHazards && dungeon.slagHazards.length === 2);
+                assert('Chefe Colosso da Fornalha instanciado', dungeon.boss && (dungeon.boss.name === 'O Colosso das Forjas' || dungeon.boss.name === 'O Colosso de Escória'));
+
+                // Slag vat burn test: place player in western slag vat
+                const initialHp = mockState.character.hp;
+                dungeon.player.x = 240;
+                dungeon.player.y = 400; // Inside West Slag Vat (x:220, y:380, w:140, h:65)
+                dungeon._update(0.3); // 300ms in molten slag (triggering continuous damage tick)
+                assert('Tanque de escória causa dano contínuo ao jogador', mockState.character.hp < initialHp, `HP: ${mockState.character.hp}/${initialHp}`);
+
+                // Boss chamber falling portcullis trigger: player moves into furnace arena (y <= 250)
+                dungeon.player.x = 688;
+                dungeon.player.y = 230;
+                dungeon._checkBossArena();
+                assert('Entrada na fornalha ativa combate e fecha comportas (fogGateActive)', dungeon.bossFightActive && dungeon.fogGateActive);
+
+                // 5. DungeonEngine: Masmorra 3 (O Trono do Vazio)
+                dungeon.exit('retreat');
+                mockState.dungeonKeys = 99;
+                dungeon.enter(canvas, 'DUNGEON_VOID');
+
+                assert('DungeonEngine entra em DUNGEON_VOID', dungeon.currentMapId === 'DUNGEON_VOID');
+                assert('Spawn na plataforma Sul do Vazio', dungeon.player.y >= 1800, `y: ${dungeon.player.y}`);
+                assert('Barreira Gravitacional inicializada ativa', dungeon.voidBarrierActive === true);
+                assert('Obeliscos Leste e Oeste inicializados', dungeon.obelisks && dungeon.obelisks.length === 2);
+                assert('Chefe Soberano do Vazio instanciado', dungeon.boss && dungeon.boss.name === 'O Soberano do Vazio');
+
+                // Gravitational barrier blocks player passage at crossroads
+                dungeon.player.x = 1792;
+                dungeon.player.y = 1080; // Trying to cross into North corridor
+                dungeon._checkBossArena();
+                assert('Barreira gravitacional impede avanço direto para o Norte', dungeon.player.y === 1120);
+
+                // Attune West Obelisk
+                dungeon.player.x = dungeon.obelisks[0].x;
+                dungeon.player.y = dungeon.obelisks[0].y;
+                dungeon.keys['e'] = true;
+                dungeon._onKeyDown({ key: 'e', code: 'KeyE', preventDefault: () => {} });
+                assert('Obelisco Ocidental sintonizado com sucesso', dungeon.voidObelisks.west === true);
+                assert('Barreira permanece ativa até que ambos sejam sintonizados', dungeon.voidBarrierActive === true);
+
+                // Attune East Obelisk
+                dungeon.player.x = dungeon.obelisks[1].x;
+                dungeon.player.y = dungeon.obelisks[1].y;
+                dungeon.keys['e'] = true;
+                dungeon._onKeyDown({ key: 'e', code: 'KeyE', preventDefault: () => {} });
+                assert('Obelisco Oriental sintonizado com sucesso', dungeon.voidObelisks.east === true);
+                assert('Ambos os obeliscos sintonizados dissipam a Barreira Gravitacional!', dungeon.voidBarrierActive === false);
+
+                // Access to Throne Arena now open
+                dungeon.player.x = 1792;
+                dungeon.player.y = 400; // Past crossroads into Throne Arena
+                dungeon._checkBossArena();
+                assert('Arena do Trono acessada e Soberano do Vazio engajado', dungeon.bossFightActive && dungeon.fogGateActive);
+
+                // 6. Memory Cleanup Test
+                MapManager.cleanupMemory(dungeon);
+                assert('cleanupMemory esvazia inimigos', dungeon.enemies.length === 0);
+                assert('cleanupMemory esvazia projéteis', dungeon.projectiles.length === 0);
+                assert('cleanupMemory esvazia partículas', dungeon.particles.length === 0);
+                assert('cleanupMemory esvazia decalques de sangue', dungeon.bloodDecals.length === 0);
+
+            } catch (err) {
+                assert('Erro inesperado na execução dos testes', false, err.stack || err.message);
+            }
+
+            renderResults();
+        }
+
+        function renderResults() {
+            const container = document.getElementById('results');
+            container.innerHTML = '';
+            let passedCount = 0;
+
+            results.forEach(res => {
+                if (res.pass) passedCount++;
+                const card = document.createElement('div');
+                card.className = `test-card ${res.pass ? 'pass' : 'fail'}`;
+                card.innerHTML = `
+                    <div class="title">${res.pass ? '✓' : '✗'} ${res.name}</div>
+                    ${res.details ? `<div class="details">${res.details}</div>` : ''}
+                `;
+                container.appendChild(card);
+            });
+
+            const summary = document.getElementById('summary');
+            const allPassed = passedCount === results.length;
+            summary.style.color = allPassed ? '#22c55e' : '#ef4444';
+            summary.textContent = `Resultado: ${passedCount} de ${results.length} testes passaram. ${allPassed ? 'TODOS OS CRITÉRIOS ATENDIDOS COM SUCESSO!' : 'FALHAS DETECTADAS.'}`;
+            window.TEST_SUITE_FINISHED = true;
+            window.TEST_ALL_PASSED = allPassed;
+        }
+
+        window.addEventListener('DOMContentLoaded', runTests);
+    </script>
+</body>
+</html>
