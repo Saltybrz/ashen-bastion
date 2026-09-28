@@ -48,6 +48,31 @@ class HubUI {
         this.bgLoaded = false;
         this.courtyardBg = null;
 
+        // Active Hub Scene & Fast Travel Management
+        this.activeHubMapId = 'HUB_VILLAGE';
+        this.cathedralBg = null;
+        this.cathedralLoaded = false;
+        this.fadeAlpha = 0;
+        this.isFading = false;
+
+        // Preload Cathedral Annex Map
+        if (window.MapManager && typeof window.MapManager.loadMapAsset === 'function') {
+            window.MapManager.loadMapAsset('HUB_CATHEDRAL').then(res => {
+                if (res.loaded && res.img) {
+                    this.cathedralBg = res.img;
+                    this.cathedralLoaded = true;
+                    console.log('[HubUI] Catedral dos Ecos preloaded successfully.');
+                }
+            });
+        } else {
+            const cathImg = new Image();
+            cathImg.onload = () => {
+                this.cathedralBg = cathImg;
+                this.cathedralLoaded = true;
+            };
+            cathImg.src = './assets/maps/hub_cathedral_annex.jpg';
+        }
+
         // Hero in Courtyard: centered at (688, 384)
         const self = this;
         this.hero = {
@@ -172,9 +197,33 @@ class HubUI {
     }
 
     /**
-     * Set up the 5 canonical interactive stations on the Courtyard Map.
+     * Set up interactive stations for active map (Courtyard vs Cathedral Sanctuary).
      */
     _setupTriggerZones() {
+        if (this.activeHubMapId === 'HUB_CATHEDRAL') {
+            const returnPortal = {
+                id: 'cathedral_exit_portal',
+                name: 'Portal do Pátio',
+                prompt: '[E] Retornar ao Pátio da Vila',
+                x: 672,
+                y: 700,
+                radius: 75,
+                icon: '⛩️',
+                color: '#c5a059',
+                action: () => {
+                    this.teleportToVillage();
+                }
+            };
+
+            const npcZones = (window.SanctuaryManager && typeof window.SanctuaryManager.getTriggerZones === 'function')
+                ? window.SanctuaryManager.getTriggerZones(this.state, this.uiManager)
+                : [];
+
+            this.triggerZones = [returnPortal, ...npcZones];
+            return;
+        }
+
+        // Pátio da Vila Principal (HUB_VILLAGE)
         this.triggerZones = [
             {
                 id: 'forge',
@@ -242,8 +291,101 @@ class HubUI {
                 action: () => {
                     this.uiManager.showAscensionModal();
                 }
+            },
+            {
+                id: 'cathedral_teleport',
+                name: 'Santuário da Catedral',
+                prompt: '[E] Teletransportar para o Santuário da Catedral',
+                x: 688, y: 285, radius: 65,
+                icon: '🏛️',
+                color: '#8e44ad',
+                action: () => {
+                    this.teleportToCathedral();
+                }
             }
         ];
+    }
+
+    /**
+     * Teleports the player from Village Courtyard to the Cathedral Sanctuary.
+     * Uses a smooth 400ms fade transition without page reload.
+     */
+    teleportToCathedral() {
+        if (this.isFading) return;
+        this._startFadeTransition(() => {
+            this.activeHubMapId = 'HUB_CATHEDRAL';
+            if (window.MapManager) window.MapManager.cleanupMemory(this);
+            this.hero.x = 672;
+            this.hero.y = 680;
+            this.hero.facing = { x: 0, y: -1 };
+            this.hero.targetPos = null;
+            this.hero.targetStation = null;
+            this._setupTriggerZones();
+            if (this.uiManager) {
+                this.uiManager.notify('Você adentrou a Catedral dos Ecos — Santuário das Cinzas.', 'info');
+            }
+            if (window.AudioManager && typeof window.AudioManager.playClick === 'function') {
+                window.AudioManager.playClick(600);
+            }
+        });
+    }
+
+    /**
+     * Returns the player from Cathedral Sanctuary back to the Village Courtyard.
+     * Uses a smooth 400ms fade transition without page reload.
+     */
+    teleportToVillage() {
+        if (this.isFading) return;
+        this._startFadeTransition(() => {
+            this.activeHubMapId = 'HUB_VILLAGE';
+            if (window.MapManager) window.MapManager.cleanupMemory(this);
+            this.hero.x = 688;
+            this.hero.y = 350;
+            this.hero.facing = { x: 0, y: 1 };
+            this.hero.targetPos = null;
+            this.hero.targetStation = null;
+            this._setupTriggerZones();
+            if (this.uiManager) {
+                this.uiManager.notify('Retornando ao Pátio do Bastião.', 'info');
+            }
+            if (window.AudioManager && typeof window.AudioManager.playClick === 'function') {
+                window.AudioManager.playClick(450);
+            }
+        });
+    }
+
+    /**
+     * Smooth canvas fade transition (400ms fade-out, execute callback, 400ms fade-in).
+     * @param {() => void} onMidpoint
+     */
+    _startFadeTransition(onMidpoint) {
+        this.isFading = true;
+        this.fadeAlpha = 0;
+        const startTime = performance.now();
+        const halfDuration = 400; // 400ms
+
+        const fadeStep = () => {
+            const now = performance.now();
+            const elapsed = now - startTime;
+
+            if (elapsed < halfDuration) {
+                this.fadeAlpha = elapsed / halfDuration;
+                requestAnimationFrame(fadeStep);
+            } else if (elapsed < halfDuration * 2) {
+                if (onMidpoint) {
+                    onMidpoint();
+                    onMidpoint = null;
+                }
+                const fadeBackElapsed = elapsed - halfDuration;
+                this.fadeAlpha = 1 - (fadeBackElapsed / halfDuration);
+                requestAnimationFrame(fadeStep);
+            } else {
+                this.fadeAlpha = 0;
+                this.isFading = false;
+            }
+        };
+
+        fadeStep();
     }
 
     /**
@@ -923,6 +1065,8 @@ class HubUI {
     }
 
     _updateCourtyard(dt) {
+        if (this.isFading) return;
+
         let dx = 0;
         let dy = 0;
 
@@ -965,21 +1109,27 @@ class HubUI {
             }
         }
 
-        // Collision bounds: circular inner courtyard around center (688, 384)
-        const cx = 688;
-        const cy = 384;
-        const maxRadius = 300;
-        const dist = Math.hypot(this.hero.x - cx, this.hero.y - cy);
-        if (dist > maxRadius) {
-            this.hero.x = cx + ((this.hero.x - cx) / dist) * maxRadius;
-            this.hero.y = cy + ((this.hero.y - cy) / dist) * maxRadius;
+        if (this.activeHubMapId === 'HUB_CATHEDRAL') {
+            // Cathedral nave bounds
+            this.hero.x = Utils.clamp(this.hero.x, 260, 1084);
+            this.hero.y = Utils.clamp(this.hero.y, 140, 715);
+        } else {
+            // Collision bounds: circular inner courtyard around center (688, 384)
+            const cx = 688;
+            const cy = 384;
+            const maxRadius = 300;
+            const dist = Math.hypot(this.hero.x - cx, this.hero.y - cy);
+            if (dist > maxRadius) {
+                this.hero.x = cx + ((this.hero.x - cx) / dist) * maxRadius;
+                this.hero.y = cy + ((this.hero.y - cy) / dist) * maxRadius;
+            }
+
+            // Hard bounding clamp inside the 1376x768 courtyard canvas
+            this.hero.x = Utils.clamp(this.hero.x, 340, 1040);
+            this.hero.y = Utils.clamp(this.hero.y, 140, 620);
         }
 
-        // Hard bounding clamp inside the 1376x768 courtyard canvas
-        this.hero.x = Utils.clamp(this.hero.x, 340, 1040);
-        this.hero.y = Utils.clamp(this.hero.y, 140, 620);
-
-        // Detect proximity to 5 interactive trigger zones
+        // Detect proximity to active interactive trigger zones
         let nearest = null;
         let minDist = Infinity;
         for (const zone of this.triggerZones) {
@@ -1013,11 +1163,24 @@ class HubUI {
             ctx.clearRect(0, 0, w, h);
 
             // 1. Draw Background Map
-            if (this.courtyardBg && this.courtyardBg.complete && this.courtyardBg.naturalWidth > 0) {
-                ctx.drawImage(this.courtyardBg, 0, 0, w, h);
+            if (this.activeHubMapId === 'HUB_CATHEDRAL') {
+                if (this.cathedralBg && this.cathedralBg.complete && this.cathedralBg.naturalWidth > 0) {
+                    ctx.drawImage(this.cathedralBg, 0, 0, w, h);
+                } else {
+                    this._drawProceduralCathedral(ctx, w, h, now);
+                }
+
+                // Render Sanctuary NPCs (Lorekeeper, Heretic Alchemist, Void Astrologer)
+                if (window.SanctuaryManager && typeof window.SanctuaryManager.render === 'function') {
+                    window.SanctuaryManager.render(ctx, this.state, this.hero, now);
+                }
             } else {
-                // High-fidelity procedural dark fantasy village courtyard fallback
-                this._drawProceduralCourtyard(ctx, w, h, now);
+                if (this.courtyardBg && this.courtyardBg.complete && this.courtyardBg.naturalWidth > 0) {
+                    ctx.drawImage(this.courtyardBg, 0, 0, w, h);
+                } else {
+                    // High-fidelity procedural dark fantasy village courtyard fallback
+                    this._drawProceduralCourtyard(ctx, w, h, now);
+                }
             }
 
             // 2. Draw Subtle Runic Interactive Zones
@@ -1188,8 +1351,66 @@ class HubUI {
                 AssetManager.drawDebugOverlay(ctx, this.courtyardW, this.courtyardH);
             }
 
+            // 4. Smooth 400ms Fast Travel Fade Overlay
+            if (this.fadeAlpha > 0) {
+                ctx.save();
+                ctx.fillStyle = `rgba(0, 0, 0, ${Math.min(1, Math.max(0, this.fadeAlpha))})`;
+                ctx.fillRect(0, 0, w, h);
+                ctx.restore();
+            }
+
         } catch (err) {
             console.error('[HubUI] Courtyard rendering error:', err);
+        }
+    }
+
+    /**
+     * Procedural gothic cathedral sanctuary fallback if background image is loading or fails.
+     */
+    _drawProceduralCathedral(ctx, w, h, now) {
+        // Dark vaulted nave floor
+        const bgGrad = ctx.createLinearGradient(0, 0, 0, h);
+        bgGrad.addColorStop(0, '#0a0910');
+        bgGrad.addColorStop(0.5, '#14121a');
+        bgGrad.addColorStop(1, '#08070b');
+        ctx.fillStyle = bgGrad;
+        ctx.fillRect(0, 0, w, h);
+
+        // Stone flagstones along nave
+        ctx.strokeStyle = 'rgba(70, 60, 85, 0.22)';
+        ctx.lineWidth = 1;
+        for (let x = 240; x <= 1100; x += 55) {
+            ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, h); ctx.stroke();
+        }
+        for (let y = 0; y <= h; y += 45) {
+            ctx.beginPath(); ctx.moveTo(240, y); ctx.lineTo(1100, y); ctx.stroke();
+        }
+
+        // Vaulted gothic arches
+        ctx.strokeStyle = 'rgba(197, 160, 89, 0.28)';
+        ctx.lineWidth = 2;
+        const arches = [380, 520, 672, 820, 960];
+        for (const ax of arches) {
+            ctx.beginPath();
+            ctx.arc(ax, 150, 45, Math.PI, 0);
+            ctx.stroke();
+        }
+
+        // Soft candle flickering lights at pillars
+        const candlePulse = (Math.sin(now / 190) + 1) * 0.5;
+        const lights = [
+            { x: 380, y: 350 }, { x: 960, y: 350 },
+            { x: 380, y: 550 }, { x: 960, y: 550 },
+            { x: 672, y: 160 }
+        ];
+        for (const l of lights) {
+            const g = ctx.createRadialGradient(l.x, l.y, 4, l.x, l.y, 70 + candlePulse * 6);
+            g.addColorStop(0, 'rgba(255, 175, 55, 0.35)');
+            g.addColorStop(1, 'rgba(0, 0, 0, 0)');
+            ctx.fillStyle = g;
+            ctx.beginPath();
+            ctx.arc(l.x, l.y, 70 + candlePulse * 6, 0, Math.PI * 2);
+            ctx.fill();
         }
     }
 

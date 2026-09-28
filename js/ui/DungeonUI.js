@@ -26,10 +26,13 @@ class DungeonUI {
             gatePortal:    document.getElementById('gate-portal'),
         };
 
+        this.selectedMapId = 'DUNGEON_RIFT';
         console.log('[DungeonUI] Initialized.');
     }
 
     init() {
+        this._initExpeditionSelector();
+
         // Enter dungeon
         this.dom.btnEnter.addEventListener('click', () => {
             if (this.state.dungeonKeys <= 0) {
@@ -40,14 +43,19 @@ class DungeonUI {
             // Show canvas
             this.dom.arena.classList.remove('hidden');
 
-            const success = this.dungeonEngine.enter(this.dom.canvas);
+            const success = this.dungeonEngine.enter(this.dom.canvas, this.selectedMapId || 'DUNGEON_RIFT');
             if (!success) {
                 this.dom.arena.classList.add('hidden');
                 this.uiManager.notify('Falha ao entrar na masmorra.', 'error');
                 return;
             }
 
-            this.uiManager.notify('Entrando na Fenda Abissal...', 'info');
+            const mapNames = {
+                'DUNGEON_RIFT': 'Entrando na Fenda Abissal...',
+                'DUNGEON_FORGES': 'Adentrando as Forjas Mortas...',
+                'DUNGEON_VOID': 'Cruzando o limiar do Trono do Vazio...'
+            };
+            this.uiManager.notify(mapNames[this.selectedMapId] || 'Entrando na masmorra...', 'info');
             this._renderSkillBar();
         });
 
@@ -195,6 +203,49 @@ class DungeonUI {
             } else {
                 slot.classList.remove('no-resource');
             }
+        });
+    }
+
+    _initExpeditionSelector() {
+        const cards = document.querySelectorAll('.expedition-card');
+        const titleEl = document.querySelector('#tab-dungeon .panel-title');
+        const descEl = document.querySelector('#tab-dungeon .gate-desc');
+
+        const mapInfo = {
+            'DUNGEON_RIFT': {
+                name: 'A Fenda Abissal',
+                desc: 'Covil subterrâneo do Carrasco de Ferro Negro. Forje uma Chave da Fenda para adentrar as catacumbas.'
+            },
+            'DUNGEON_FORGES': {
+                name: 'As Forjas Mortas',
+                desc: 'Fundição industrial abandonada. Tanques incandescentes de escória fundida e o Colosso da Fornalha.'
+            },
+            'DUNGEON_VOID': {
+                name: 'O Trono do Vazio',
+                desc: 'Arena cósmica sobre o abismo infinito. Sintonize os obeliscos gêmeos para enfrentar o Soberano do Vazio.'
+            }
+        };
+
+        cards.forEach(card => {
+            card.addEventListener('click', () => {
+                const mapId = card.dataset.mapId;
+                if (!mapId) return;
+
+                cards.forEach(c => c.classList.remove('active'));
+                card.classList.add('active');
+                this.selectedMapId = mapId;
+
+                if (titleEl && mapInfo[mapId]) {
+                    titleEl.textContent = mapInfo[mapId].name;
+                }
+                if (descEl && mapInfo[mapId]) {
+                    descEl.textContent = mapInfo[mapId].desc;
+                }
+
+                if (this.uiManager) {
+                    this.uiManager.notify(`Destino definido: ${mapInfo[mapId]?.name || mapId}`, 'info');
+                }
+            });
         });
     }
 }

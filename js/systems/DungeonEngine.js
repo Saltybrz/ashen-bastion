@@ -907,6 +907,250 @@ class ShatteredGazerBoss extends Enemy {
     }
 }
 
+// ─── Boss 2: O Colosso das Forjas (As Forjas Mortas) ───
+class ForgeColossusBoss extends Enemy {
+    constructor(options) {
+        super({
+            ...options,
+            name: 'O Colosso das Forjas',
+            title: 'GUARDIÃO DA FUNDIÇÃO INCANDESCENTE',
+            archetype: 'boss',
+            spriteKey: 'automaton_heavy',
+            frameWidth: 160,
+            frameHeight: 160,
+            width: 160,
+            height: 160,
+            speed: 36,
+            armor: 42,
+            attackRange: 100,
+            attackCooldown: 1.8,
+            windUpDuration: 0.45,
+            perceptionRadius: 650,
+            w: 160, h: 160,
+            radius: 46,
+            icon: '🜛',
+            color: '#e65100',
+            isBoss: true,
+            isElite: true,
+            xpValue: 240 + (options.floor || 1) * 60,
+        });
+
+        this.phase = 1;
+        this.slamCooldown = 3.5;
+        this.moltenVolleyCooldown = 4.2;
+        this.isDying = false;
+        this.deathTimer = 0;
+        this.deathDuration = 2.2;
+    }
+
+    update(dt, player, engine) {
+        if (this.isDying) {
+            this.deathTimer -= dt;
+            this.vx = 0;
+            this.vy = 0;
+            if (Math.random() < 0.45) {
+                engine.particles.push({
+                    x: this.x + Utils.randFloat(-30, 30),
+                    y: this.y - 30 + Utils.randFloat(-20, 20),
+                    vx: Utils.randFloat(-30, 30),
+                    vy: Utils.randFloat(-60, -20),
+                    lifetime: 0.85, maxLife: 0.85,
+                    size: Utils.randFloat(6, 16),
+                    color: Math.random() < 0.5 ? '#ff5722' : '#ffb74d',
+                    type: 'circle',
+                });
+            }
+            if (this.deathTimer <= 0) {
+                engine._finishBossDeath(this);
+            }
+            return;
+        }
+
+        // Phase 2 at <= 50% HP: Core Overheat
+        if (this.phase === 1 && this.hp <= this.maxHp * 0.5) {
+            this.phase = 2;
+            this.speed = Math.floor(this.speed * 1.3);
+            this.attackCooldown = 1.2;
+            engine.triggerScreenShake(14, 0.45);
+            engine.triggerHitstop(0.080);
+            engine.combat.emitFloatingText(this.x, this.y - 45, 'NÚCLEO SUPER-AQUECIDO! FORNALHA EM FRENESI!', true, '#ff5722');
+            for (let i = 0; i < 28; i++) {
+                engine.particles.push({
+                    x: this.x, y: this.y - 20,
+                    vx: Utils.randFloat(-140, 140),
+                    vy: Utils.randFloat(-140, 140),
+                    lifetime: 0.9, maxLife: 0.9,
+                    size: Utils.randFloat(7, 18),
+                    color: Math.random() < 0.5 ? '#ff9800' : '#f44336',
+                    type: 'circle',
+                });
+            }
+        }
+
+        // Molten Slag Volley
+        this.moltenVolleyCooldown -= dt;
+        if (this.moltenVolleyCooldown <= 0 && this.state !== EnemyState.DEAD) {
+            this.moltenVolleyCooldown = this.phase === 2 ? 2.8 : 4.2;
+            const count = this.phase === 2 ? 5 : 3;
+            const baseAngle = Math.atan2(player.y - this.y, player.x - this.x);
+            const spread = Math.PI * 0.35;
+            for (let i = 0; i < count; i++) {
+                const ang = baseAngle - spread / 2 + (i * spread) / Math.max(1, count - 1);
+                engine.projectiles.push({
+                    x: this.x, y: this.y,
+                    vx: Math.cos(ang) * 210,
+                    vy: Math.sin(ang) * 210,
+                    w: 14, h: 14,
+                    damage: Math.floor(this.damage * 0.8),
+                    lifetime: 2.5,
+                    isPlayer: false,
+                    color: '#ff5722',
+                    type: 'fireball'
+                });
+            }
+        }
+
+        // Slag Ground Slam
+        this.slamCooldown -= dt;
+        if (this.slamCooldown <= 0 && this.state !== EnemyState.DEAD) {
+            this.slamCooldown = this.phase === 2 ? 3.0 : 4.5;
+            engine.shockwaves.push({
+                x: this.x, y: this.y,
+                r: 10, maxR: 120,
+                speed: 180,
+                damage: Math.floor(this.damage * 0.9),
+                hitPlayer: false,
+                color: '#ff7043'
+            });
+            engine.triggerScreenShake(8, 0.2);
+        }
+
+        super.update(dt, player, engine);
+    }
+}
+
+// ─── Boss 3: O Soberano do Vazio (O Trono do Vazio) ───
+class VoidSovereignBoss extends Enemy {
+    constructor(options) {
+        super({
+            ...options,
+            name: 'O Soberano do Vazio',
+            title: 'TITÃ CÓSMICO DO HORIZONTE DE EVENTOS',
+            archetype: 'boss',
+            spriteKey: 'void_horror',
+            frameWidth: 200,
+            frameHeight: 200,
+            width: 200,
+            height: 200,
+            speed: 32,
+            armor: 36,
+            attackRange: 220,
+            attackCooldown: 1.9,
+            windUpDuration: 0.5,
+            perceptionRadius: 800,
+            w: 200, h: 200,
+            radius: 54,
+            icon: '🌌',
+            color: '#9333ea',
+            isBoss: true,
+            isElite: true,
+            xpValue: 500 + (options.floor || 1) * 100,
+        });
+
+        this.phase = 1;
+        this.beamCooldown = 4.0;
+        this.vortexCooldown = 6.0;
+        this.summonCooldown = 8.0;
+        this.isDying = false;
+        this.deathTimer = 0;
+        this.deathDuration = 2.5;
+    }
+
+    update(dt, player, engine) {
+        if (this.isDying) {
+            this.deathTimer -= dt;
+            this.vx = 0;
+            this.vy = 0;
+            if (Math.random() < 0.5) {
+                engine.particles.push({
+                    x: this.x + Utils.randFloat(-40, 40),
+                    y: this.y - 40 + Utils.randFloat(-30, 30),
+                    vx: Utils.randFloat(-40, 40),
+                    vy: Utils.randFloat(-70, -20),
+                    lifetime: 1.0, maxLife: 1.0,
+                    size: Utils.randFloat(8, 22),
+                    color: Math.random() < 0.5 ? '#9333ea' : '#3b82f6',
+                    type: 'circle',
+                });
+            }
+            if (this.deathTimer <= 0) {
+                engine._finishBossDeath(this);
+            }
+            return;
+        }
+
+        // Phase 2 at <= 50% HP: Colapso do Vazio
+        if (this.phase === 1 && this.hp <= this.maxHp * 0.5) {
+            this.phase = 2;
+            this.speed = Math.floor(this.speed * 1.25);
+            this.attackCooldown = 1.4;
+            engine.triggerScreenShake(18, 0.6);
+            engine.triggerHitstop(0.090);
+            engine.combat.emitFloatingText(this.x, this.y - 50, 'COLAPSO DO HORIZONTE DE EVENTOS!', true, '#c084fc');
+            for (let i = 0; i < 35; i++) {
+                engine.particles.push({
+                    x: this.x, y: this.y - 30,
+                    vx: Utils.randFloat(-160, 160),
+                    vy: Utils.randFloat(-160, 160),
+                    lifetime: 1.1, maxLife: 1.1,
+                    size: Utils.randFloat(8, 20),
+                    color: Math.random() < 0.5 ? '#c084fc' : '#3b82f6',
+                    type: 'circle',
+                });
+            }
+        }
+
+        // Cosmic Ray / Gravitational Beam attack
+        this.beamCooldown -= dt;
+        if (this.beamCooldown <= 0 && this.state !== EnemyState.DEAD) {
+            this.beamCooldown = this.phase === 2 ? 2.5 : 4.0;
+            const count = this.phase === 2 ? 8 : 6;
+            const baseAngle = Math.atan2(player.y - this.y, player.x - this.x);
+            for (let i = 0; i < count; i++) {
+                const ang = baseAngle + ((i - count / 2) * 0.16);
+                engine.projectiles.push({
+                    x: this.x, y: this.y,
+                    vx: Math.cos(ang) * 240,
+                    vy: Math.sin(ang) * 240,
+                    w: 16, h: 16,
+                    damage: Math.floor(this.damage * 0.9),
+                    lifetime: 3.0,
+                    isPlayer: false,
+                    color: '#c084fc',
+                    type: 'void_shard'
+                });
+            }
+            engine.triggerScreenShake(6, 0.15);
+        }
+
+        // Gravitational Vortex Pull toward center
+        this.vortexCooldown -= dt;
+        if (this.vortexCooldown <= 0 && this.state !== EnemyState.DEAD) {
+            this.vortexCooldown = this.phase === 2 ? 4.5 : 7.0;
+            const pullDx = this.x - player.x;
+            const pullDy = this.y - player.y;
+            const dist = Math.hypot(pullDx, pullDy) || 1;
+            if (dist < 550) {
+                player.vx += (pullDx / dist) * 140;
+                player.vy += (pullDy / dist) * 140;
+                engine.combat.emitFloatingText(player.x, player.y - 25, 'PUXÃO GRAVITACIONAL!', false, '#a855f7');
+            }
+        }
+
+        super.update(dt, player, engine);
+    }
+}
+
 class DungeonEngine {
     constructor(state) {
         /** @type {StateManager} */
@@ -1023,6 +1267,13 @@ class DungeonEngine {
         // Interactive Chests
         this.chests = [];
 
+        // Dynamic Map & Progression Support
+        this.currentMapId = 'DUNGEON_RIFT';
+        this.slagHazards = [];
+        this.voidBarrierActive = false;
+        this.voidObelisks = { west: false, east: false };
+        this.obelisks = [];
+
         console.log('[DungeonEngine] Initialized with Roguelike Zoom, Dynamic Lighting & Combat Feel.');
     }
 
@@ -1045,8 +1296,10 @@ class DungeonEngine {
 
     /**
      * Enter a new dungeon.
+     * @param {HTMLCanvasElement} canvasEl
+     * @param {string} [mapId=null]
      */
-    enter(canvasEl) {
+    enter(canvasEl, mapId = null) {
         if (!this.state.useKey()) return false;
 
         this.canvas = canvasEl;
@@ -1055,6 +1308,29 @@ class DungeonEngine {
         this.isPaused = false;
         this.floor   = 1;
         this.runLoot = { gold: 0, items: [] };
+
+        // Set active map definition
+        if (mapId) {
+            this.currentMapId = mapId;
+        } else if (window.MapManager && window.MapManager.activeDungeonMapId) {
+            this.currentMapId = window.MapManager.activeDungeonMapId;
+        } else {
+            this.currentMapId = 'DUNGEON_RIFT';
+        }
+
+        const mapDef = (window.MapManager && window.MapManager.getMap(this.currentMapId))
+            || (window.WORLD_MAPS && window.WORLD_MAPS[this.currentMapId])
+            || { width: 2752, height: 1536, spawn: { x: 0.5, y: 0.92 }, src: 'assets/maps/dungeon_level_1.jpg' };
+
+        this.roomW = mapDef.width || 2752;
+        this.roomH = mapDef.height || 1536;
+        this.mapImage = new Image();
+        this.mapImage.src = mapDef.src || 'assets/maps/dungeon_level_1.jpg';
+
+        // Deep Memory Cleanup on level entry (clears stale particles, shockwaves, enemies)
+        if (window.MapManager && typeof window.MapManager.cleanupMemory === 'function') {
+            window.MapManager.cleanupMemory(this);
+        }
 
         // Reset Boss and Arena state
         this.fogGateActive = false;
@@ -1066,18 +1342,18 @@ class DungeonEngine {
         this._resizeCanvas();
         window.addEventListener('resize', this._onResize);
 
-        // Generate first floor
+        // Generate floor elements
         this._generateFloor();
 
-        // Place player at South Entrance (portal with green torches)
-        this.player.x = 1376;
-        this.player.y = 1420;
+        // Place player according to map spawn point
+        this.player.x = Math.round((mapDef.spawn ? mapDef.spawn.x : 0.5) * this.roomW);
+        this.player.y = Math.round((mapDef.spawn ? mapDef.spawn.y : 0.92) * this.roomH);
         this.player.vx = 0;
         this.player.vy = 0;
 
-        // Reset Roguelike Camera & Zoom (Immersive 1.6x)
-        this.zoom = 1.6;
-        this.targetZoom = 1.6;
+        // Reset Roguelike Camera & Zoom
+        this.zoom = (this.currentMapId === 'DUNGEON_FORGES' ? 1.4 : 1.6);
+        this.targetZoom = this.zoom;
         this.camera.x = this.player.x;
         this.camera.y = this.player.y;
         this.rawMouseScreen = { x: this.canvas.width / 2, y: this.canvas.height / 2 };
@@ -1204,6 +1480,18 @@ class DungeonEngine {
             this.combat.groundEffects = [];
         }
 
+        if (this.currentMapId === 'DUNGEON_FORGES') {
+            this._generateForgesDungeon();
+        } else if (this.currentMapId === 'DUNGEON_VOID') {
+            this._generateVoidDungeon();
+        } else {
+            this._generateRiftDungeon();
+        }
+
+        this.state.emit('dungeon:floor', { floor: this.floor, enemies: this.enemies.length });
+    }
+
+    _generateRiftDungeon() {
         // 4 Interactive Relic Chests in side chambers
         this.chests = [
             { id: 'chest_nw', x: 550, y: 350, opened: false },
@@ -1212,7 +1500,24 @@ class DungeonEngine {
             { id: 'chest_ne', x: 2100, y: 500, opened: false },
         ];
 
-        // Boss in North Chamber (arena circular com iluminação carmesim)
+        this.braziers = [
+            // South Entrance
+            { x: 1310, y: 1420 }, { x: 1442, y: 1420 },
+            // Central Corridor
+            { x: 1310, y: 1200 }, { x: 1442, y: 1200 },
+            { x: 1310, y: 950 },  { x: 1442, y: 950 },
+            { x: 1310, y: 750 },  { x: 1442, y: 750 },
+            { x: 1310, y: 520 },  { x: 1442, y: 520 },
+            // West Wing
+            { x: 950, y: 1250 }, { x: 950, y: 900 }, { x: 740, y: 750 }, { x: 550, y: 600 }, { x: 550, y: 350 },
+            // East Wing
+            { x: 1650, y: 1150 }, { x: 1850, y: 1150 }, { x: 1750, y: 850 }, { x: 2100, y: 750 }, { x: 2100, y: 500 }, { x: 1700, y: 450 },
+            // North Fog Gate & Boss Arena
+            { x: 1240, y: 430 }, { x: 1512, y: 430 },
+            { x: 1200, y: 220 }, { x: 1552, y: 220 }, { x: 1376, y: 70 }
+        ];
+
+        // Boss in North Chamber
         this.boss = this._spawnBoss();
         this.enemies.push(this.boss);
 
@@ -1244,71 +1549,132 @@ class DungeonEngine {
             enemy.y = pt.y + Utils.randFloat(-35, 35);
             this.enemies.push(enemy);
         }
-
-        this.state.emit('dungeon:floor', { floor: this.floor, enemies: this.enemies.length });
     }
 
-    _spawnEnemy(typeOverride = null) {
-        const types = ['crawler', 'phlebotomist', 'automaton', 'brood'];
-        const type = typeOverride || types[Utils.randInt(0, types.length - 1)];
+    _generateForgesDungeon() {
+        // Lateral Slag Vats (Continuous burn hazard when stepping inside or near edges)
+        this.slagHazards = [
+            { x: 220, y: 380, w: 140, h: 65, name: 'Bacia de Escória Ocidental' },
+            { x: 990, y: 380, w: 140, h: 65, name: 'Bacia de Escória Oriental' }
+        ];
 
-        const diff = this.state.difficultyConfig || { enemyHpMult: 1.0, enemyDmgMult: 1.0, id: 'pilgrim' };
-        const isElite = (diff.id === 'abyssal') || (Math.random() < 0.15 + (diff.id === 'veteran' ? 0.15 : 0));
-        const isChampion = isElite && (Math.random() < 0.3 || diff.id === 'abyssal');
-        const isVeteran = !isElite && (Math.random() < 0.35);
+        // Workshop Rooms with Black Iron Ingots and keys
+        this.chests = [
+            { id: 'forge_chest_sw', x: 200, y: 640, opened: false, rewardType: 'black_iron' },
+            { id: 'forge_chest_se', x: 1150, y: 640, opened: false, rewardType: 'black_iron' },
+            { id: 'forge_chest_nw', x: 200, y: 150, opened: false, rewardType: 'black_iron' },
+            { id: 'forge_chest_ne', x: 1150, y: 150, opened: false, rewardType: 'black_iron' },
+        ];
 
-        let variantTier = 'common';
-        if (isChampion) variantTier = 'champion';
-        else if (isElite) variantTier = 'elite';
-        else if (isVeteran) variantTier = 'veteran';
+        this.braziers = [
+            { x: 640, y: 720 }, { x: 736, y: 720 },
+            { x: 688, y: 550 }, { x: 688, y: 400 }, { x: 688, y: 300 },
+            { x: 290, y: 412 }, { x: 1070, y: 412 },
+            { x: 688, y: 195 }
+        ];
 
-        let tierHpMult = 1.0;
-        let tierDmgMult = 1.0;
-        if (variantTier === 'champion') { tierHpMult = 1.75; tierDmgMult = 1.35; }
-        else if (variantTier === 'elite') { tierHpMult = 1.45; tierDmgMult = 1.20; }
-        else if (variantTier === 'veteran') { tierHpMult = 1.15; tierDmgMult = 1.10; }
+        this.boss = this._spawnBoss();
+        this.enemies.push(this.boss);
 
-        const hpMultiplier = diff.enemyHpMult * tierHpMult;
-        const dmgMultiplier = diff.enemyDmgMult * tierDmgMult;
+        // Heavy Automaton and Ashen monsters patrolling tracks & workshops
+        const forgePoints = [
+            { x: 688, y: 560, type: 'automaton' },
+            { x: 688, y: 430, type: 'automaton' },
+            { x: 420, y: 620, type: 'phlebotomist' },
+            { x: 950, y: 620, type: 'phlebotomist' },
+            { x: 300, y: 360, type: 'crawler' },
+            { x: 1060, y: 360, type: 'crawler' },
+            { x: 400, y: 220, type: 'automaton' },
+            { x: 970, y: 220, type: 'automaton' },
+            { x: 250, y: 500, type: 'brood' },
+            { x: 1120, y: 500, type: 'brood' },
+        ];
 
-        const baseHp = Math.floor((24 + this.floor * 8) * hpMultiplier);
-        const baseDmg = Math.floor((6 + this.floor * 2) * dmgMultiplier);
+        for (const pt of forgePoints) {
+            const enemy = this._spawnEnemy(pt.type);
+            enemy.x = pt.x + Utils.randFloat(-25, 25);
+            enemy.y = pt.y + Utils.randFloat(-25, 25);
+            this.enemies.push(enemy);
+        }
+    }
 
-        const spawnOpts = {
-            x: Utils.randFloat(100, this.roomW - 100),
-            y: Utils.randFloat(200, this.roomH - 200),
-            hp: baseHp,
-            damage: baseDmg,
-            isElite: isElite || isChampion,
-            isChampion,
-            isVeteran,
-            variantTier,
+    _generateVoidDungeon() {
+        // Gravitational barrier active across central crossroads (blocking North Throne)
+        this.voidBarrierActive = true;
+        this.voidObelisks = { west: false, east: false };
+
+        this.obelisks = [
+            { id: 'obelisk_west', x: 780, y: 1008, radius: 75, name: 'Obelisco do Vácuo Ocidental', attuned: false },
+            { id: 'obelisk_east', x: 2804, y: 1008, radius: 75, name: 'Obelisco do Vácuo Oriental', attuned: false }
+        ];
+
+        this.chests = [
+            { id: 'void_chest_w', x: 700, y: 1008, opened: false, rewardType: 'void_relic' },
+            { id: 'void_chest_e', x: 2880, y: 1008, opened: false, rewardType: 'void_relic' },
+        ];
+
+        this.braziers = [
+            { x: 1792, y: 1915 }, { x: 1792, y: 1500 }, { x: 1792, y: 1250 },
+            { x: 1792, y: 1100 },
+            { x: 1300, y: 1050 }, { x: 2284, y: 1050 },
+            { x: 780, y: 1008 }, { x: 2804, y: 1008 },
+            { x: 1792, y: 750 }, { x: 1792, y: 350 }
+        ];
+
+        this.boss = this._spawnBoss();
+        this.enemies.push(this.boss);
+
+        // Void Spawns guarding the lateral wings and bridges
+        const voidPoints = [
+            { x: 1792, y: 1600, type: 'crawler' },
+            { x: 1792, y: 1350, type: 'crawler' },
+            { x: 1300, y: 1050, type: 'crawler' },
+            { x: 950,  y: 1008, type: 'crawler' },
+            { x: 800,  y: 920,  type: 'phlebotomist' },
+            { x: 800,  y: 1090, type: 'brood' },
+            { x: 2284, y: 1050, type: 'crawler' },
+            { x: 2630, y: 1008, type: 'crawler' },
+            { x: 2780, y: 920,  type: 'phlebotomist' },
+            { x: 2780, y: 1090, type: 'brood' },
+            { x: 1792, y: 800,  type: 'phlebotomist' },
+            { x: 1792, y: 600,  type: 'crawler' },
+        ];
+
+        for (const pt of voidPoints) {
+            const enemy = this._spawnEnemy(pt.type);
+            enemy.x = pt.x + Utils.randFloat(-35, 35);
+            enemy.y = pt.y + Utils.randFloat(-35, 35);
+            this.enemies.push(enemy);
+        }
+    }
+
+    _spawnEnemy(type, opts = {}) {
+        const diff = this.state.difficultyConfig || { enemyHpMult: 1.0, enemyDmgMult: 1.0 };
+        const baseHp = Math.floor((35 + this.floor * 14) * diff.enemyHpMult);
+        const baseDmg = Math.floor((6 + this.floor * 2.2) * diff.enemyDmgMult);
+        const isElite = opts.isElite || (Math.random() < 0.15);
+
+        const options = {
+            hp: isElite ? Math.floor(baseHp * 1.8) : baseHp,
+            damage: isElite ? Math.floor(baseDmg * 1.4) : baseDmg,
             floor: this.floor,
+            isElite,
+            ...opts
         };
 
-        if (type === 'crawler') {
-            return new RiftCrawlerEnemy({
-                ...spawnOpts,
-                name: 'Rastejante do Vazio',
-                familyId: 'void_spawn',
-            });
-        } else if (isElite || isChampion || type === 'phlebotomist' || type === 'brute') {
-            return new FlayedBruteEnemy({
-                ...spawnOpts,
-                name: isChampion ? 'Bruto Esfolado Campeão' : 'Bruto Esfolado',
-                hp: Math.floor(baseHp * 1.35),
-                damage: Math.floor(baseDmg * 1.25),
-                isElite: true,
-                familyId: 'the_flayed',
-            });
-        } else {
-            return new PenitentAutomatonEnemy({
-                ...spawnOpts,
-                name: 'Monge das Cinzas',
-                hp: Math.floor(baseHp * 1.2),
-                damage: baseDmg,
-                familyId: 'ashen_coven',
-            });
+        switch (type) {
+            case 'phlebotomist':
+                return new PhlebotomistEnemy(options);
+            case 'automaton':
+            case 'monk':
+                return new PenitentAutomatonEnemy(options);
+            case 'brood':
+            case 'hound':
+                return new BlightHoundEnemy(options);
+            case 'crawler':
+            case 'skitterer':
+            default:
+                return new RiftCrawlerEnemy(options);
         }
     }
 
@@ -1317,7 +1683,25 @@ class DungeonEngine {
         const bossHp = Math.floor((320 + this.floor * 80) * diff.enemyHpMult);
         const bossDmg = Math.floor((18 + this.floor * 5) * diff.enemyDmgMult);
 
-        // Rotação dos 3 Grandes Chefes por Andar da Fenda
+        if (this.currentMapId === 'DUNGEON_FORGES') {
+            return new ForgeColossusBoss({
+                x: 688,
+                y: 185,
+                hp: Math.floor(bossHp * 1.35),
+                damage: Math.floor(bossDmg * 1.2),
+                floor: this.floor,
+            });
+        } else if (this.currentMapId === 'DUNGEON_VOID') {
+            return new VoidSovereignBoss({
+                x: 1792,
+                y: 350,
+                hp: Math.floor(bossHp * 1.9),
+                damage: Math.floor(bossDmg * 1.45),
+                floor: this.floor,
+            });
+        }
+
+        // Rotação dos 3 Grandes Chefes por Andar da Fenda Abissal
         const bossCycle = ((this.floor - 1) % 3);
 
         if (bossCycle === 1) {
@@ -1409,8 +1793,57 @@ class DungeonEngine {
                         bobPhase: Math.random() * Math.PI * 2,
                     });
                 }
-                if (window.uiManager) {
-                    window.uiManager.notify('Baú ancestral aberto nas ruínas!', 'loot');
+
+                if (chest.rewardType === 'black_iron') {
+                    // Forjas Mortas: Lingotes de ferro negro e chave extra
+                    this.state.gainResource('iron', 35);
+                    this.state.gainResource('gold', 25);
+                    if (Math.random() < 0.5) {
+                        this.state.dungeonKeys++;
+                        this.state.emit('keys:changed', this.state.dungeonKeys);
+                        if (window.uiManager) window.uiManager.notify('Oficina das Forjas: Lingotes de Ferro Negro e Chave extra!', 'loot');
+                    } else {
+                        if (window.uiManager) window.uiManager.notify('Oficina das Forjas: Lingotes de Ferro Negro e Ouro!', 'loot');
+                    }
+                } else if (chest.rewardType === 'void_relic') {
+                    this.state.gainResource('essence', 2);
+                    this.state.gainResource('sacred_ashes', 3);
+                    if (window.uiManager) window.uiManager.notify('Relicário do Vazio: Essências Cósmicas e Cinzas Sagradas!', 'loot');
+                } else {
+                    if (window.uiManager) {
+                        window.uiManager.notify('Baú ancestral aberto nas ruínas!', 'loot');
+                    }
+                }
+            }
+        }
+
+        // Check Molten Slag Continuous Damage Hazard (As Forjas Mortas)
+        if (this.currentMapId === 'DUNGEON_FORGES' && this.slagHazards && this.slagHazards.length > 0) {
+            for (const vat of this.slagHazards) {
+                if (this.player.x >= vat.x - 8 && this.player.x <= vat.x + vat.w + 8 &&
+                    this.player.y >= vat.y - 8 && this.player.y <= vat.y + vat.h + 8) {
+                    this._burnTick = (this._burnTick || 0) + dt;
+                    if (this._burnTick >= 0.25) {
+                        this._burnTick = 0;
+                        const burnDmg = Math.max(2, Math.floor(3 * (this.state.difficultyConfig?.enemyDmgMult || 1)));
+                        this.player.hp = Math.max(1, this.player.hp - burnDmg);
+                        this.damageVignetteTimer = 0.25;
+                        if (this.combat && typeof this.combat.emitFloatingText === 'function') {
+                            this.combat.emitFloatingText(this.player.x, this.player.y - 20, `-${burnDmg} Escória`, false, '#ff5722');
+                        }
+                        for (let i = 0; i < 3; i++) {
+                            this.particles.push({
+                                x: this.player.x + Utils.randFloat(-10, 10),
+                                y: this.player.y + Utils.randFloat(-10, 10),
+                                vx: Utils.randFloat(-20, 20),
+                                vy: Utils.randFloat(-40, -10),
+                                lifetime: 0.5, maxLife: 0.5,
+                                size: Utils.randFloat(3, 7),
+                                color: '#ff7043',
+                                type: 'circle'
+                            });
+                        }
+                    }
                 }
             }
         }
@@ -1784,16 +2217,36 @@ class DungeonEngine {
             if (bossHud) bossHud.classList.add('hidden');
 
             // Spawn Extraction Monolith at center of arena
+            let monoX = 1376;
+            let monoY = 220;
+            let defeatMsg = 'O Carrasco de Ferro Negro foi derrotado! O Monólito de Extração despertou!';
+            this.state.character = this.state.character || {};
+            this.state.character.bossesDefeated = this.state.character.bossesDefeated || {};
+
+            if (this.currentMapId === 'DUNGEON_FORGES') {
+                monoX = 688;
+                monoY = 150;
+                defeatMsg = 'O Colosso de Escória ruiu! O Monólito de Extração das Forjas despertou!';
+                this.state.character.bossesDefeated.forge_colossus = true;
+            } else if (this.currentMapId === 'DUNGEON_VOID') {
+                monoX = 1792;
+                monoY = 240;
+                defeatMsg = 'O Soberano do Vazio foi banido! O Portal Cósmico de Extração despertou!';
+                this.state.character.bossesDefeated.void_sovereign = true;
+            } else {
+                this.state.character.bossesDefeated.ironbound_executioner = true;
+            }
+
             this.extractionMonolith = {
-                x: 1376,
-                y: 220,
+                x: monoX,
+                y: monoY,
                 radius: 32,
                 pulseTimer: 0,
             };
 
             this.state.emit('dungeon:bossdeath', { floor: this.floor });
             if (window.uiManager) {
-                window.uiManager.notify('O Carrasco de Ferro Negro foi derrotado! O Monólito de Extração despertou!', 'legendary');
+                window.uiManager.notify(defeatMsg, 'legendary');
             }
         }
 
@@ -1942,10 +2395,17 @@ class DungeonEngine {
         if (!this.running) return;
         this.isPaused = true;
 
+        let bossDefeatedName = 'O Carrasco de Ferro Negro';
+        if (this.currentMapId === 'DUNGEON_FORGES') {
+            bossDefeatedName = 'O Colosso de Escória';
+        } else if (this.currentMapId === 'DUNGEON_VOID') {
+            bossDefeatedName = 'O Soberano do Vazio';
+        }
+
         const spoils = {
             gold: this.runLoot?.gold || 0,
             items: this.runLoot?.items || [],
-            bossDefeated: 'O Carrasco de Ferro Negro',
+            bossDefeated: bossDefeatedName,
             floor: this.floor,
         };
 
@@ -1968,6 +2428,48 @@ class DungeonEngine {
     _checkBossArena() {
         if (!this.boss || this.boss.hp <= 0) return;
 
+        if (this.currentMapId === 'DUNGEON_FORGES') {
+            // Forjas Mortas: North circular furnace arena (y <= 250)
+            if (this.player.y <= 250 && !this.bossFightActive) {
+                this.bossFightActive = true;
+                this.fogGateActive = true;
+                if (window.uiManager) {
+                    window.uiManager.notify('As comportas de ferro caem sobre os trilhos! A Fornalha desperta!', 'danger');
+                }
+            }
+            if (this.fogGateActive) {
+                if (this.player.y >= 248 && this.player.y <= 275 && this.player.x >= 630 && this.player.x <= 745) {
+                    this.player.y = 246;
+                }
+            }
+            return;
+        }
+
+        if (this.currentMapId === 'DUNGEON_VOID') {
+            // Gravitational barrier collision at central junction (y ~ 1100)
+            if (this.voidBarrierActive) {
+                if (this.player.y <= 1115 && this.player.y >= 1060 && this.player.x >= 1690 && this.player.x <= 1895) {
+                    this.player.y = 1120;
+                }
+            }
+
+            // North Throne Arena (y <= 450)
+            if (this.player.y <= 450 && !this.bossFightActive) {
+                this.bossFightActive = true;
+                this.fogGateActive = true;
+                if (window.uiManager) {
+                    window.uiManager.notify('O Horizonte de Eventos se fecha! O Soberano do Vazio ergue-se do Trono!', 'danger');
+                }
+            }
+            if (this.fogGateActive) {
+                if (this.player.y >= 445 && this.player.y <= 475 && this.player.x >= 1690 && this.player.x <= 1895) {
+                    this.player.y = 442;
+                }
+            }
+            return;
+        }
+
+        // Dungeon 1: A Fenda Abissal
         // Player entered North Arena (y <= 420)
         if (this.player.y <= 420 && !this.bossFightActive) {
             this.bossFightActive = true;
@@ -2000,12 +2502,12 @@ class DungeonEngine {
             if (fill) fill.style.width = `${pct}%`;
             if (textEl) textEl.textContent = `${Math.round(pct)}%`;
             if (nameEl) {
-                nameEl.textContent = 'O Carrasco de Ferro Negro';
+                nameEl.textContent = this.boss.name || 'O Carrasco de Ferro Negro';
             }
             if (titleEl) {
                 titleEl.textContent = this.boss.phase === 2
-                    ? 'GUARDIÃO DA FORNALHA MORTA (FRENESI SANGRENTO)'
-                    : 'GUARDIÃO DA FORNALHA MORTA';
+                    ? `${this.boss.title || 'GUARDIÃO DA FORNALHA'} (FRENESI SANGRENTO)`
+                    : (this.boss.title || 'GUARDIÃO DA FORNALHA');
             }
         } else {
             bossHud.classList.add('hidden');
@@ -2169,6 +2671,9 @@ class DungeonEngine {
 
         // Dungeon Braziers & Torches
         this._drawBraziers(ctx);
+
+        // Dynamic Map Features: Slag Vats, Falling Portcullis, Void Obelisks & Gravitational Barrier
+        this._drawMapSpecificFeatures(ctx);
 
         // Interactive Chests
         for (const chest of this.chests) {
@@ -3078,6 +3583,40 @@ class DungeonEngine {
                 }
             }
 
+            // Check Void Obelisks Attunement with [E]
+            if (wantsInteract && this.currentMapId === 'DUNGEON_VOID' && this.obelisks) {
+                for (const obelisk of this.obelisks) {
+                    const dist = Math.hypot(this.player.x - obelisk.x, this.player.y - obelisk.y);
+                    if (dist <= obelisk.radius * 1.4 && !obelisk.attuned) {
+                        obelisk.attuned = true;
+                        this.keys['e'] = false;
+                        if (obelisk.id === 'obelisk_west') this.voidObelisks.west = true;
+                        if (obelisk.id === 'obelisk_east') this.voidObelisks.east = true;
+
+                        this.triggerScreenShake(8, 0.35);
+                        if (this.combat && this.combat.emitFloatingText) {
+                            this.combat.emitFloatingText(obelisk.x, obelisk.y - 40, 'OBELISCO SINTONIZADO!', true, '#c084fc');
+                        }
+                        if (window.AudioManager && window.AudioManager.playClash) {
+                            window.AudioManager.playClash(false);
+                        }
+
+                        if (this.voidObelisks.west && this.voidObelisks.east) {
+                            this.voidBarrierActive = false;
+                            this.triggerScreenShake(14, 0.6);
+                            if (window.uiManager) {
+                                window.uiManager.notify('A Barreira Gravitacional se desfez! O caminho para o Trono do Vazio está aberto!', 'legendary');
+                            }
+                        } else {
+                            if (window.uiManager) {
+                                window.uiManager.notify(`${obelisk.name} ressoou! Sintonize o obelisco restante para dissipar a barreira!`, 'warning');
+                            }
+                        }
+                        return;
+                    }
+                }
+            }
+
             // Potion quickslots
             const wantsPot1 = sm ? sm.isActionActive('potion1', keyState) : (k === '1');
             const wantsPot2 = sm ? sm.isActionActive('potion2', keyState) : (k === '2');
@@ -3356,6 +3895,213 @@ class DungeonEngine {
         }
     }
 
+    /**
+     * Map-Specific Dynamic Features & Hazards:
+     * - DUNGEON_FORGES: Molten slag vats with thermal glow, falling portcullis gate at North circular furnace
+     * - DUNGEON_VOID: Dual hexagonal obelisks with attunement beams, pulsating purple gravitational barrier across crossroads
+     */
+    _drawMapSpecificFeatures(ctx) {
+        const time = performance.now();
+
+        // ═══════════════════════════════════════════
+        //  MASMORRA 2: AS FORJAS MORTAS
+        // ═══════════════════════════════════════════
+        if (this.currentMapId === 'DUNGEON_FORGES') {
+            // 1. Draw Molten Slag Vats with radiant boiling metal
+            if (this.slagHazards) {
+                for (const vat of this.slagHazards) {
+                    ctx.save();
+                    // Slag basin border / warning rim
+                    ctx.strokeStyle = '#f97316';
+                    ctx.lineWidth = 3;
+                    ctx.strokeRect(vat.x, vat.y, vat.w, vat.h);
+
+                    // Boiling molten metal interior
+                    const pulse = Math.sin(time / 280 + vat.x) * 0.15 + 0.85;
+                    const lavaGrad = ctx.createLinearGradient(vat.x, vat.y, vat.x + vat.w, vat.y + vat.h);
+                    lavaGrad.addColorStop(0, `rgba(239, 68, 68, ${0.85 * pulse})`);
+                    lavaGrad.addColorStop(0.5, `rgba(249, 115, 22, ${0.95 * pulse})`);
+                    lavaGrad.addColorStop(1, `rgba(234, 179, 8, ${0.85 * pulse})`);
+                    ctx.fillStyle = lavaGrad;
+                    ctx.fillRect(vat.x, vat.y, vat.w, vat.h);
+
+                    // Molten bubbles & hot spots
+                    ctx.fillStyle = 'rgba(254, 240, 138, 0.75)';
+                    for (let b = 0; b < 6; b++) {
+                        const bx = vat.x + 15 + ((b * 22 + (time * 0.04) % (vat.w - 30)));
+                        const by = vat.y + 10 + (Math.sin(time * 0.005 + b) * (vat.h / 3) + vat.h / 3);
+                        const br = 2.5 + Math.sin(time * 0.01 + b) * 1.5;
+                        ctx.beginPath();
+                        ctx.arc(bx, by, Math.max(1, br), 0, Math.PI * 2);
+                        ctx.fill();
+                    }
+
+                    // Warning sign / thermal aura
+                    ctx.shadowColor = 'rgba(239, 68, 68, 0.8)';
+                    ctx.shadowBlur = 18;
+                    ctx.strokeStyle = 'rgba(254, 215, 170, 0.4)';
+                    ctx.lineWidth = 1;
+                    ctx.strokeRect(vat.x - 2, vat.y - 2, vat.w + 4, vat.h + 4);
+                    ctx.restore();
+                }
+            }
+
+            // 2. Falling Portcullis Gate at North Entrance (y = 250)
+            if (this.fogGateActive) {
+                ctx.save();
+                // Portcullis iron bars dropping down
+                ctx.fillStyle = 'rgba(30, 27, 34, 0.95)';
+                ctx.fillRect(630, 246, 115, 12);
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(630, 246, 115, 12);
+
+                // Vertical spiked iron grating
+                ctx.fillStyle = '#dc2626';
+                for (let gx = 635; gx <= 740; gx += 12) {
+                    ctx.fillRect(gx, 242, 4, 18);
+                }
+
+                // Fiery warning runes along the gate
+                const runeAlpha = Math.sin(time / 200) * 0.35 + 0.65;
+                ctx.fillStyle = `rgba(255, 100, 50, ${runeAlpha})`;
+                ctx.font = 'bold 12px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.fillText('⚡ COMPORTAS FECHADAS ⚡', 688, 235);
+                ctx.restore();
+            }
+        }
+
+        // ═══════════════════════════════════════════
+        //  MASMORRA 3: O TRONO DO VAZIO
+        // ═══════════════════════════════════════════
+        else if (this.currentMapId === 'DUNGEON_VOID') {
+            // 1. Dual Hexagonal Obelisks (West: 780, 1008; East: 2804, 1008)
+            if (this.obelisks) {
+                for (const ob of this.obelisks) {
+                    ctx.save();
+                    const isNear = Math.hypot(this.player.x - ob.x, this.player.y - ob.y) <= ob.radius * 1.4;
+
+                    // Rotating Runic Circle on the floor
+                    const rot = (time / 1800) * (ob.id === 'obelisk_west' ? 1 : -1);
+                    ctx.translate(ob.x, ob.y);
+
+                    // Outer magical ring
+                    ctx.save();
+                    ctx.rotate(rot);
+                    ctx.beginPath();
+                    ctx.arc(0, 0, ob.radius * 0.85, 0, Math.PI * 2);
+                    ctx.strokeStyle = ob.attuned ? 'rgba(192, 132, 252, 0.85)' : (isNear ? 'rgba(234, 179, 8, 0.75)' : 'rgba(147, 51, 234, 0.45)');
+                    ctx.lineWidth = ob.attuned ? 3 : 2;
+                    ctx.stroke();
+
+                    // Runic ticks
+                    for (let a = 0; a < 6; a++) {
+                        const ang = (a * Math.PI) / 3;
+                        ctx.beginPath();
+                        ctx.moveTo(Math.cos(ang) * (ob.radius * 0.75), Math.sin(ang) * (ob.radius * 0.75));
+                        ctx.lineTo(Math.cos(ang) * (ob.radius * 0.95), Math.sin(ang) * (ob.radius * 0.95));
+                        ctx.stroke();
+                    }
+                    ctx.restore();
+
+                    // Central Monolith Pillar
+                    const pulse = Math.sin(time / 250) * 0.2 + 0.8;
+                    ctx.beginPath();
+                    ctx.arc(0, 0, 22, 0, Math.PI * 2);
+                    ctx.fillStyle = ob.attuned ? '#581c87' : '#1e1028';
+                    ctx.fill();
+                    ctx.strokeStyle = ob.attuned ? '#d8b4fe' : '#9333ea';
+                    ctx.lineWidth = 2;
+                    ctx.stroke();
+
+                    // Ethereal vertical energy beam if attuned
+                    if (ob.attuned) {
+                        ctx.shadowColor = '#c084fc';
+                        ctx.shadowBlur = 24;
+                        ctx.fillStyle = `rgba(192, 132, 252, ${0.45 * pulse})`;
+                        ctx.fillRect(-12, -180, 24, 180);
+                        ctx.fillStyle = '#ffffff';
+                        ctx.fillRect(-4, -180, 8, 180);
+                        ctx.shadowBlur = 0;
+                    }
+
+                    // Glyph icon
+                    ctx.font = 'bold 20px "Cinzel", serif';
+                    ctx.textAlign = 'center';
+                    ctx.textBaseline = 'middle';
+                    ctx.fillStyle = ob.attuned ? '#f3e8ff' : (isNear ? '#fde047' : '#a855f7');
+                    ctx.fillText(ob.attuned ? 'ᛟ' : 'ᚱ', 0, 0);
+
+                    // Near Interaction Prompt
+                    if (isNear && !ob.attuned) {
+                        ctx.font = 'bold 12px "Cinzel", serif';
+                        ctx.fillStyle = '#fde047';
+                        ctx.fillText('[E] Sintonizar Obelisco', 0, -38);
+                    }
+                    ctx.restore();
+                }
+            }
+
+            // 2. Gravitational Purple Barrier across Crossroads (Blocking North Bridge: x: 1690..1895, y: 1100)
+            if (this.voidBarrierActive) {
+                ctx.save();
+                const pTime = time / 150;
+                const bx1 = 1690, bx2 = 1895, by = 1100;
+
+                // Pulsing Singularity wall
+                const barGrad = ctx.createLinearGradient(bx1, by - 20, bx2, by + 20);
+                barGrad.addColorStop(0, 'rgba(126, 34, 206, 0.9)');
+                barGrad.addColorStop(0.5, 'rgba(192, 132, 252, 0.95)');
+                barGrad.addColorStop(1, 'rgba(88, 28, 135, 0.9)');
+                ctx.fillStyle = barGrad;
+                ctx.shadowColor = 'rgba(168, 85, 247, 0.95)';
+                ctx.shadowBlur = 20;
+                ctx.fillRect(bx1, by - 12, bx2 - bx1, 24);
+
+                // Electric cosmic arcs across the barrier
+                ctx.strokeStyle = '#e9d5ff';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(bx1, by);
+                for (let x = bx1 + 15; x <= bx2; x += 20) {
+                    const jitter = Math.sin(pTime + x) * 10;
+                    ctx.lineTo(x, by + jitter);
+                }
+                ctx.stroke();
+
+                // Warning runic text over barrier
+                ctx.font = 'bold 13px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#f3e8ff';
+                ctx.fillText('⛊ BARREIRA GRAVITACIONAL SELADA ⛊', 1792, by - 22);
+
+                const westStatus = this.voidObelisks?.west ? '✓' : '✗';
+                const eastStatus = this.voidObelisks?.east ? '✓' : '✗';
+                ctx.font = '10px monospace';
+                ctx.fillStyle = '#d8b4fe';
+                ctx.fillText(`Obelisco Oeste: [${westStatus}]  |  Obelisco Leste: [${eastStatus}]`, 1792, by + 28);
+                ctx.restore();
+            }
+
+            // 3. Cosmic Horizon Gate when Boss arena is entered (y = 450)
+            if (this.fogGateActive) {
+                ctx.save();
+                const gx1 = 1690, gx2 = 1895, gy = 445;
+                ctx.fillStyle = 'rgba(15, 5, 25, 0.95)';
+                ctx.fillRect(gx1, gy - 8, gx2 - gx1, 16);
+                ctx.strokeStyle = '#a855f7';
+                ctx.lineWidth = 2.5;
+                ctx.strokeRect(gx1, gy - 8, gx2 - gx1, 16);
+                ctx.font = 'bold 12px "Cinzel", serif';
+                ctx.textAlign = 'center';
+                ctx.fillStyle = '#f3e8ff';
+                ctx.fillText('🌌 HORIZONTE DE EVENTOS SELADO 🌌', 1792, gy - 16);
+                ctx.restore();
+            }
+        }
+    }
+
     _drawAmbientMotes(ctx) {
         const time = performance.now();
         const maxW = (this.canvas.width / this.zoom) / 2 + 50;
@@ -3583,28 +4329,114 @@ class DungeonEngine {
         const toMx = (wx) => mx + (wx / this.roomW) * mw;
         const toMy = (wy) => my + (wy / this.roomH) * mh;
 
-        // Corridors & Chambers layout
-        ctx.fillStyle = '#1c1822';
-        // South corridor
-        ctx.fillRect(toMx(1220), toMy(450), toMx(1532) - toMx(1220), toMy(1500) - toMy(450));
-        // West chamber
-        ctx.fillRect(toMx(480), toMy(280), toMx(1100) - toMx(480), toMy(1350) - toMy(280));
-        // East chamber
-        ctx.fillRect(toMx(1650), toMy(400), toMx(2250) - toMx(1650), toMy(1250) - toMy(400));
-        // Boss Arena (North circular)
-        ctx.beginPath();
-        ctx.arc(toMx(1376), toMy(220), 22, 0, Math.PI * 2);
-        ctx.fillStyle = '#261219';
-        ctx.fill();
+        if (this.currentMapId === 'DUNGEON_FORGES') {
+            // As Forjas Mortas: Industrial track corridor, workshops, slag vats, circular furnace
+            ctx.fillStyle = '#1c1822';
+            // Central rail corridor
+            ctx.fillRect(toMx(600), toMy(250), toMx(776) - toMx(600), toMy(740) - toMy(250));
+            // West workshops & vat room
+            ctx.fillRect(toMx(150), toMy(300), toMx(600) - toMx(150), toMy(700) - toMy(300));
+            // East workshops & vat room
+            ctx.fillRect(toMx(776), toMy(300), toMx(1226) - toMx(776), toMy(700) - toMy(300));
 
-        // Impassable Fog Gate Marker
-        if (this.fogGateActive) {
-            ctx.strokeStyle = '#ef4444';
-            ctx.lineWidth = 2;
+            // Molten Slag Vats (hazard markers in orange-red)
+            ctx.fillStyle = '#ef4444';
+            ctx.fillRect(toMx(220), toMy(380), toMx(360) - toMx(220), toMy(445) - toMy(380));
+            ctx.fillRect(toMx(990), toMy(380), toMx(1130) - toMx(990), toMy(445) - toMy(380));
+
+            // North Circular Furnace Arena
             ctx.beginPath();
-            ctx.moveTo(toMx(1240), toMy(430));
-            ctx.lineTo(toMx(1512), toMy(430));
-            ctx.stroke();
+            ctx.arc(toMx(688), toMy(150), 18, 0, Math.PI * 2);
+            ctx.fillStyle = '#3f1810';
+            ctx.fill();
+
+            // Portcullis gate marker
+            if (this.fogGateActive) {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(toMx(630), toMy(250));
+                ctx.lineTo(toMx(745), toMy(250));
+                ctx.stroke();
+            }
+        } else if (this.currentMapId === 'DUNGEON_VOID') {
+            // O Trono do Vazio: Cosmic cross over the infinite abyss
+            ctx.fillStyle = '#140c1f';
+            // South bridge
+            ctx.fillRect(toMx(1690), toMy(1100), toMx(1895) - toMx(1690), toMy(1950) - toMy(1100));
+            // North bridge
+            ctx.fillRect(toMx(1690), toMy(450), toMx(1895) - toMx(1690), toMy(1100) - toMy(450));
+            // West wing walkway
+            ctx.fillRect(toMx(780), toMy(950), toMx(1690) - toMx(780), toMy(1066) - toMy(950));
+            // East wing walkway
+            ctx.fillRect(toMx(1895), toMy(950), toMx(2804) - toMx(1895), toMy(1066) - toMy(950));
+
+            // Hexagonal platform nodes (West and East)
+            ctx.fillStyle = '#241038';
+            ctx.beginPath();
+            ctx.arc(toMx(780), toMy(1008), 10, 0, Math.PI * 2);
+            ctx.arc(toMx(2804), toMy(1008), 10, 0, Math.PI * 2);
+            ctx.fill();
+
+            // North Throne Semicircle
+            ctx.beginPath();
+            ctx.arc(toMx(1792), toMy(240), 20, 0, Math.PI * 2);
+            ctx.fillStyle = '#301344';
+            ctx.fill();
+
+            // Obelisk Markers
+            if (this.obelisks) {
+                for (const ob of this.obelisks) {
+                    ctx.fillStyle = ob.attuned ? '#c084fc' : '#9333ea';
+                    ctx.beginPath();
+                    ctx.arc(toMx(ob.x), toMy(ob.y), ob.attuned ? 3.5 : 2.5, 0, Math.PI * 2);
+                    ctx.fill();
+                }
+            }
+
+            // Gravitational Barrier Marker
+            if (this.voidBarrierActive) {
+                ctx.strokeStyle = '#c084fc';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(toMx(1690), toMy(1100));
+                ctx.lineTo(toMx(1895), toMy(1100));
+                ctx.stroke();
+            }
+
+            // Event horizon gate
+            if (this.fogGateActive) {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(toMx(1690), toMy(450));
+                ctx.lineTo(toMx(1895), toMy(450));
+                ctx.stroke();
+            }
+        } else {
+            // Default Rift layout
+            ctx.fillStyle = '#1c1822';
+            // South corridor
+            ctx.fillRect(toMx(1220), toMy(450), toMx(1532) - toMx(1220), toMy(1500) - toMy(450));
+            // West chamber
+            ctx.fillRect(toMx(480), toMy(280), toMx(1100) - toMx(480), toMy(1350) - toMy(280));
+            // East chamber
+            ctx.fillRect(toMx(1650), toMy(400), toMx(2250) - toMx(1650), toMy(1250) - toMy(400));
+            // Boss Arena (North circular)
+            ctx.beginPath();
+            ctx.arc(toMx(1376), toMy(220), 22, 0, Math.PI * 2);
+            ctx.fillStyle = '#261219';
+            ctx.fill();
+
+            // Impassable Fog Gate Marker
+            if (this.fogGateActive) {
+                ctx.strokeStyle = '#ef4444';
+                ctx.lineWidth = 2;
+                ctx.beginPath();
+                ctx.moveTo(toMx(1240), toMy(430));
+                ctx.lineTo(toMx(1512), toMy(430));
+                ctx.stroke();
+            }
         }
 
         // Interactive Chests
